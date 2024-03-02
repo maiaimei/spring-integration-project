@@ -1,6 +1,7 @@
 package cn.maiaimei.samples.integration.file.dsl;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import cn.maiaimei.samples.constants.IntegrationConstants;
 import cn.maiaimei.samples.integration.MoveFileProperties;
@@ -46,6 +47,7 @@ public class MoveFileFlowTest {
 
     final List<File> files = IOUtil.listFiles(moveFileProperties.getDestination());
     assertThat(files).isNotNull();
+    assertEquals(1, files.size());
     log.info("Detected {} files in destination directory", files.size());
     files.forEach(file -> log.info("Detected file {} in destination directory", file.getAbsolutePath
         ()));
