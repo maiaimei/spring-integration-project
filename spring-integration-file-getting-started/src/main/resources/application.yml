@@ -1,0 +1,10 @@
+move-file:
+  cron: "* * * * * ?"
+  source: /app/move-file/input
+  pattern: "*.txt"
+  destination: /app/move-file/archive
+
+file-reading:
+  cron: "* * * * * ?"
+  source: /app/file-reading/input
+  pattern: "*.txt"  
