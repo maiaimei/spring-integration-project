@@ -1,6 +1,6 @@
 package cn.maiaimei.samples.utils;
 
-import cn.maiaimei.samples.constants.IntegrationConstants;
+import cn.maiaimei.samples.constants.StringConstants;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -13,7 +13,7 @@ import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class IOUtil extends org.apache.commons.io.FileUtils {
+public class IOUtils extends org.apache.commons.io.FileUtils {
 
   public static String getOrCreateTempDirectory() {
     try {
@@ -59,8 +59,8 @@ public class IOUtil extends org.apache.commons.io.FileUtils {
   }
 
   public static String getPath(String... paths) {
-    final String path = StringUtil.concat(File.separator, paths);
-    return StringUtil.cleanPath(path);
+    final String path = StringUtils.concat(File.separator, paths);
+    return StringUtils.cleanPath(path);
   }
 
   public static void writeStringToFile(final String path, final String data) {
@@ -69,7 +69,7 @@ public class IOUtil extends org.apache.commons.io.FileUtils {
 
   public static void writeStringToFile(final String path, final String data,
       final Charset charset) {
-    String processingPath = path.concat(IntegrationConstants.FILE_SUFFIX_WRITING);
+    String processingPath = path.concat(StringConstants.FILE_SUFFIX_WRITING);
     try {
       final File processingFile = getOrCreateFile(processingPath);
       writeStringToFile(processingFile, data, charset, false);

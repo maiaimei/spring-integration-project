@@ -1,8 +1,8 @@
 package cn.maiaimei.samples.integration.config;
 
-import cn.maiaimei.samples.constants.IntegrationConstants;
+import cn.maiaimei.samples.constants.StringConstants;
 import cn.maiaimei.samples.integration.MoveFileProperties;
-import cn.maiaimei.samples.utils.IOUtil;
+import cn.maiaimei.samples.utils.IOUtils;
 import java.io.File;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,7 +29,7 @@ public class IntegrationContextConfig01 {
     return IntegrationFlow
         .from(fileReadingMessageSource(),
             e -> e.poller(Pollers.cron(moveFileProperties.getCron())
-                .errorChannel(IntegrationConstants.ERROR_CHANNEL)))
+                .errorChannel(StringConstants.ERROR_CHANNEL)))
         .wireTap(
             flow -> flow.handle(message -> log.info("Detected file {}", message.getPayload()))
         )
@@ -44,7 +44,7 @@ public class IntegrationContextConfig01 {
     filter.addFilter(new SimplePatternFileListFilter(moveFileProperties.getPattern()));
     final FileReadingMessageSource messageSource = new FileReadingMessageSource();
     messageSource.setDirectory(
-        IOUtil.getOrCreateDirectory(moveFileProperties.getSource())
+        IOUtils.getOrCreateDirectory(moveFileProperties.getSource())
     );
     messageSource.setAutoCreateDirectory(Boolean.TRUE);
     messageSource.setFilter(filter);
@@ -58,7 +58,7 @@ public class IntegrationContextConfig01 {
 
   private FileWritingMessageHandler fileWritingMessageHandler() {
     FileWritingMessageHandler handler = new FileWritingMessageHandler(
-        IOUtil.getOrCreateDirectory(moveFileProperties.getDestination())
+        IOUtils.getOrCreateDirectory(moveFileProperties.getDestination())
     );
     handler.setAutoCreateDirectory(Boolean.TRUE);
     handler.setDeleteSourceFiles(Boolean.TRUE);

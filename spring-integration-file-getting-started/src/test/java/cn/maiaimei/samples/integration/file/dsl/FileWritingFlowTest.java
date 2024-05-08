@@ -3,8 +3,8 @@ package cn.maiaimei.samples.integration.file.dsl;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import cn.maiaimei.samples.integration.config.IntegrationConfig;
-import cn.maiaimei.samples.utils.IOUtil;
-import cn.maiaimei.samples.utils.StringUtil;
+import cn.maiaimei.samples.utils.IOUtils;
+import cn.maiaimei.samples.utils.StringUtils;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
@@ -38,20 +38,20 @@ public class FileWritingFlowTest {
 
   @AfterAll
   public static void teardownAll() throws IOException {
-    IOUtil.deleteDirectory(IOUtil.getOrCreateDirectory("/tmp/file-writing"));
+    IOUtils.deleteDirectory(IOUtils.getOrCreateDirectory("/tmp/file-writing"));
   }
 
   @Test
   public void testFileWritingFlow() throws InterruptedException {
     fileWritingInput.send(new GenericMessage<>("foo"));
     TimeUnit.SECONDS.sleep(3);
-    final List<File> files = IOUtil.listFiles("/tmp/file-writing");
+    final List<File> files = IOUtils.listFiles("/tmp/file-writing");
     assertThat(files).isNotNull();
     assertThat(files.size()).isEqualTo(1);
     final Message<?> receive = fileWritingResultChannel.receive(60000);
     assertThat(receive).isNotNull();
     assertThat(receive.getPayload()).isNotNull();
-    assertThat(StringUtil.cleanPath(receive.getPayload().toString())).isEqualTo(
+    assertThat(StringUtils.cleanPath(receive.getPayload().toString())).isEqualTo(
         "/tmp/file-writing/foo.txt");
   }
 
@@ -62,7 +62,7 @@ public class FileWritingFlowTest {
     public IntegrationFlow fileWritingFlow() {
       return IntegrationFlow.from("fileWritingInput")
           .enrichHeaders(h -> h.header(FileHeaders.FILENAME, "foo.txt")
-              .header("directory", IOUtil.getOrCreateDirectory("/tmp/file-writing")))
+              .header("directory", IOUtils.getOrCreateDirectory("/tmp/file-writing")))
           .handle(Files.outboundGateway(m -> m.getHeaders().get("directory")))
           .channel(MessageChannels.queue("fileWritingResultChannel"))
           .get();

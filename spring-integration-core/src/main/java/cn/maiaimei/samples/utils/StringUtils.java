@@ -1,9 +1,8 @@
 package cn.maiaimei.samples.utils;
 
 import java.util.Objects;
-import org.springframework.util.StringUtils;
 
-public class StringUtil extends StringUtils {
+public class StringUtils extends org.springframework.util.StringUtils {
 
   public static String concat(String delimiter, String... values) {
     if (Objects.nonNull(values)) {

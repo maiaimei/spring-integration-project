@@ -1,8 +1,8 @@
 package cn.maiaimei.samples.integration.config;
 
-import cn.maiaimei.samples.constants.IntegrationConstants;
+import cn.maiaimei.samples.constants.StringConstants;
 import cn.maiaimei.samples.integration.FileReadingProperties;
-import cn.maiaimei.samples.utils.IOUtil;
+import cn.maiaimei.samples.utils.IOUtils;
 import java.io.File;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,7 +25,7 @@ public class IntegrationContextConfig02 {
   public IntegrationFlow fileReadingFlow() {
     return IntegrationFlow
         .from(
-            Files.inboundAdapter(IOUtil.getOrCreateDirectory(fileReadingProperties.getSource()))
+            Files.inboundAdapter(IOUtils.getOrCreateDirectory(fileReadingProperties.getSource()))
                 .patternFilter(fileReadingProperties.getPattern())
                 .useWatchService(Boolean.TRUE)
                 .watchEvents(
@@ -33,7 +33,7 @@ public class IntegrationContextConfig02 {
                     FileReadingMessageSource.WatchEventType.MODIFY
                 ),
             e -> e.poller(Pollers.cron(fileReadingProperties.getCron())
-                .errorChannel(IntegrationConstants.ERROR_CHANNEL)
+                .errorChannel(StringConstants.ERROR_CHANNEL)
             ))
         .wireTap(
             flow -> flow.handle(message -> log.info("Detected file {}", message.getPayload()))

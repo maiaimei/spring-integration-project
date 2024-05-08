@@ -2,11 +2,11 @@ package cn.maiaimei.samples.integration.file.dsl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import cn.maiaimei.samples.constants.IntegrationConstants;
+import cn.maiaimei.samples.constants.StringConstants;
 import cn.maiaimei.samples.integration.FileReadingProperties;
 import cn.maiaimei.samples.integration.config.IntegrationConfig;
 import cn.maiaimei.samples.integration.config.IntegrationContextConfig02;
-import cn.maiaimei.samples.utils.IOUtil;
+import cn.maiaimei.samples.utils.IOUtils;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,7 +39,7 @@ public class FileReadingFlowTest {
 
   @AfterAll
   public static void teardownAll() throws IOException {
-    IOUtil.deleteDirectory(IOUtil.getOrCreateDirectory("/tmp/file-reading"));
+    IOUtils.deleteDirectory(IOUtils.getOrCreateDirectory("/tmp/file-reading"));
   }
 
   @Test
@@ -49,12 +49,12 @@ public class FileReadingFlowTest {
     for (int i = 0; i < 10; i++) {
       boolean even = i % 2 == 0;
       String extension =
-          even ? IntegrationConstants.FILE_SUFFIX_TXT : IntegrationConstants.FILE_SUFFIX_CSV;
+          even ? StringConstants.FILE_SUFFIX_TXT : StringConstants.FILE_SUFFIX_CSV;
       if (even) {
         evens.add(i);
       }
-      IOUtil.writeStringToFile(
-          IOUtil.getPath(fileReadingProperties.getSource(), i + extension),
+      IOUtils.writeStringToFile(
+          IOUtils.getPath(fileReadingProperties.getSource(), i + extension),
           String.valueOf(i)
       );
     }
@@ -70,7 +70,7 @@ public class FileReadingFlowTest {
     result.forEach(s -> assertThat(evens.contains(Integer.parseInt(s))).isTrue());
 
     // error scenario
-    IOUtil.getOrCreateFile(fileReadingProperties.getSource(), "a.txt");
+    IOUtils.getOrCreateFile(fileReadingProperties.getSource(), "a.txt");
     Message<?> receive = this.errorChannel.receive(60000);
     assertThat(receive).isNotNull();
     assertThat(receive).isInstanceOf(ErrorMessage.class);

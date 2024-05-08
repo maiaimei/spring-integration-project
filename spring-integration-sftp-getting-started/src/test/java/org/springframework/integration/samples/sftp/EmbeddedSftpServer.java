@@ -66,7 +66,7 @@ public class EmbeddedSftpServer implements InitializingBean, SmartLifecycle {
         new SimpleGeneratorHostKeyProvider(new File("hostkey.ser").toPath()));
     server.setSubsystemFactories(Collections.singletonList(new SftpSubsystemFactory()));
     final String pathname =
-        System.getProperty("java.io.tmpdir") + File.separator + "sftptest" + File.separator;
+        System.getProperty("java.io.tmpdir") + File.separator + "remote" + File.separator;
     new File(pathname).mkdirs();
     server.setFileSystemFactory(new VirtualFileSystemFactory(Paths.get(pathname)));
   }
