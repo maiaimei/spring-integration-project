@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.sshd.common.file.virtualfs.VirtualFileSystemFactory;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
@@ -33,8 +34,11 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.integration.sftp.session.DefaultSftpSessionFactory;
 
 /**
+ * 使用Apache Mina SSHD创建一个嵌入的SFTP服务器
+ *
  * @author Artem Bilan
  */
+@Slf4j
 public class EmbeddedSftpServer implements InitializingBean, SmartLifecycle {
 
   /**
@@ -43,6 +47,8 @@ public class EmbeddedSftpServer implements InitializingBean, SmartLifecycle {
   public static final int PORT = 0;
 
   private final SshServer server = SshServer.setUpDefaultServer();
+
+  private volatile String name;
 
   private volatile int port;
 
@@ -66,7 +72,8 @@ public class EmbeddedSftpServer implements InitializingBean, SmartLifecycle {
         new SimpleGeneratorHostKeyProvider(new File("hostkey.ser").toPath()));
     server.setSubsystemFactories(Collections.singletonList(new SftpSubsystemFactory()));
     final String pathname =
-        System.getProperty("java.io.tmpdir") + File.separator + "remote" + File.separator;
+        System.getProperty("java.io.tmpdir") + File.separator + this.name + File.separator;
+    log.info("EmbeddedSftpServer path is {}", pathname);
     new File(pathname).mkdirs();
     server.setFileSystemFactory(new VirtualFileSystemFactory(Paths.get(pathname)));
   }
@@ -89,10 +96,13 @@ public class EmbeddedSftpServer implements InitializingBean, SmartLifecycle {
   @Override
   public void start() {
     try {
+      log.info("EmbeddedSftpServer is starting");
       this.server.start();
       this.defaultSftpSessionFactory.setPort(this.server.getPort());
       this.running = true;
+      log.info("EmbeddedSftpServer started on port {}", this.server.getPort());
     } catch (IOException e) {
+      log.error("EmbeddedSftpServer started error", e);
       throw new IllegalStateException(e);
     }
   }
@@ -107,8 +117,11 @@ public class EmbeddedSftpServer implements InitializingBean, SmartLifecycle {
   public void stop() {
     if (this.running) {
       try {
+        log.info("EmbeddedSftpServer is stoping");
         server.stop(true);
+        log.info("EmbeddedSftpServer stop completed");
       } catch (Exception e) {
+        log.error("EmbeddedSftpServer stop error", e);
         throw new IllegalStateException(e);
       } finally {
         this.running = false;
@@ -119,5 +132,9 @@ public class EmbeddedSftpServer implements InitializingBean, SmartLifecycle {
   @Override
   public boolean isRunning() {
     return this.running;
+  }
+
+  public void setName(String name) {
+    this.name = name;
   }
 }
