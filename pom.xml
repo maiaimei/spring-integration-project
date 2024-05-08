@@ -18,6 +18,7 @@
   <modules>
     <module>spring-integration-file-getting-started</module>
     <module>spring-integration-core</module>
+    <module>spring-integration-sftp-getting-started</module>
   </modules>
 
   <properties>
