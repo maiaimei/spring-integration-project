@@ -20,7 +20,7 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.integration.sftp.session.DefaultSftpSessionFactory;
 
 @Slf4j
-public class SftpServer {
+public class SftpServerApplication {
 
   private static final SshServer server = SshServer.setUpDefaultServer();
 
@@ -32,6 +32,9 @@ public class SftpServer {
 
   private static volatile boolean running;
 
+  /**
+   * -Dport=9090 -DhomeDirectory=sftp-server-01 -Djava.io.tmpdir="C:\Users\lenovo\Desktop\tmp"
+   */
   public static void main(String[] args) throws Exception {
     configureServer();
     startServer();
@@ -78,7 +81,8 @@ public class SftpServer {
     String tmpdir = System.getProperty("java.io.tmpdir");
     final String pathname = tmpdir + File.separator + homeDirectory + File.separator;
     log.info("SftpServer home directory is {}", pathname);
-    if (!new File(pathname).mkdirs()) {
+    final File file = new File(pathname);
+    if (!file.exists() && !file.mkdirs()) {
       throw new RuntimeException("SftpServer home directory create failed");
     }
     server.setPublickeyAuthenticator(getPublickeyAuthenticator());
@@ -95,7 +99,7 @@ public class SftpServer {
 
   private static void initSessionFactory() {
     sessionFactory = new DefaultSftpSessionFactory();
-    sessionFactory.setHost("localhost");
+    sessionFactory.setHost("127.0.0.1");
     sessionFactory.setUser("user");
     sessionFactory.setPrivateKey(new ClassPathResource("META-INF/keys/sftp_rsa"));
     sessionFactory.setPrivateKeyPassphrase("password");
