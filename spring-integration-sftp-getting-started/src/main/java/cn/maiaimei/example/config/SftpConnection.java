@@ -1,4 +1,4 @@
-package sftp;
+package cn.maiaimei.example.config;
 
 import lombok.Data;
 import org.springframework.core.io.Resource;
@@ -11,9 +11,9 @@ public class SftpConnection {
   private String user;
   private String password;
   private Resource privateKey;
-  private String PrivateKeyPassphrase;
+  private String privateKeyPassphrase;
   private String proxyHost;
   private String proxyPort;
-  private Integer maxSession;
-  private long timeout;
+  private int poolSize;
+  private long waitTimeout;
 }

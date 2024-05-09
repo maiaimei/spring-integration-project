@@ -2,6 +2,7 @@ package sftp;
 
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
+import cn.maiaimei.example.config.SftpConnection;
 import cn.maiaimei.samples.utils.StringUtils;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -37,7 +38,7 @@ public class SftpClientApplication {
     conn.setUser("user");
     conn.setPrivateKey(new ClassPathResource("META-INF/keys/sftp_rsa"));
     conn.setPrivateKeyPassphrase("password");
-    conn.setTimeout(10000);
+    conn.setWaitTimeout(10000);
 
     uploadFile(conn);
   }
@@ -66,7 +67,7 @@ public class SftpClientApplication {
       log.info("SshClient is connecting");
       client.start();
       ClientSession session = client.connect(conn.getUser(), conn.getHost(), conn.getPort())
-          .verify(conn.getTimeout())
+          .verify(conn.getWaitTimeout())
           .getSession();
       // 密码登录
       if (StringUtils.hasText(conn.getPassword())) {
@@ -87,7 +88,7 @@ public class SftpClientApplication {
                     FilePasswordProvider.of(conn.getPrivateKeyPassphrase()));
         session.setKeyIdentityProvider(KeyIdentityProvider.wrapKeyPairs(keys));
       }
-      session.auth().verify(conn.getTimeout());
+      session.auth().verify(conn.getWaitTimeout());
       log.info("SshClient connect success");
       consumer.accept(session);
     } catch (IOException | GeneralSecurityException e) {
