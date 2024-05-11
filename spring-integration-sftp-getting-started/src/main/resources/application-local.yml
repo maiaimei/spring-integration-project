@@ -1,8 +1,12 @@
 sftp:
+  key: value
   connections:
-    s1:
+    jd:
       host: 127.0.0.1
-      port: 9090
+      port: 54662
       user: user
       privateKey: classpath:/META-INF/keys/sftp_rsa
       privateKeyPassphrase: password
+
+server:
+  port: 9999

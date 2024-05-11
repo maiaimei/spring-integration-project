@@ -1,3 +1,18 @@
+# Spring
+
+@ExtendWith(SpringExtension.class)提供了Spring单测的上下文环境, 会启动一个用于单测的Spring容器,
+完成单测中所需的bean对象的构建与自动注入。
+
+@PropertySource 和 @ContextConfiguration 是Spring框架中用于进行单元测试的两个注解。
+
+@PropertySource 用于指定属性文件的位置，这样可以在测试过程中使用属性文件中定义的值。
+
+@ContextConfiguration 用于指定Spring上下文的配置类或定义XML文件的位置，以便在测试运行时创建应用程序上下文。
+
+@TestPropertySource
+
+@ImportResource
+
 # Junit
 
 在非spring项目中：

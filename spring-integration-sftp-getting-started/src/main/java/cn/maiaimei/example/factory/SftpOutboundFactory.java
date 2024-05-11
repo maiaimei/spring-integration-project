@@ -9,11 +9,8 @@ import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.sshd.sftp.client.SftpClient;
 import org.apache.sshd.sftp.client.SftpClient.DirEntry;
-import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
 import org.springframework.expression.common.LiteralExpression;
 import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.file.FileHeaders;
@@ -37,26 +34,20 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @EnableConfigurationProperties(SftpConnectionHolder.class)
-public class SftpOutboundFactory implements ApplicationContextAware, InitializingBean {
+public class SftpOutboundFactory implements InitializingBean {
 
   private static final String PAYLOAD = "payload";
 
+  private SftpConnectionHolder sftpConnectionHolder;
+
   private Map<String, CachingSessionFactory<SftpClient.DirEntry>> templateMap;
-
-  private ApplicationContext applicationContext;
-
-  @Override
-  public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-    this.applicationContext = applicationContext;
-  }
 
   @Override
   public void afterPropertiesSet() throws Exception {
-    final SftpConnectionHolder sftpConnectionHolder = this.applicationContext.getBean(
-        SftpConnectionHolder.class);
-    sftpConnectionHolder.getConnections().forEach((schema, connection) -> {
-      templateMap.put(schema, cachingSessionFactory(connection));
-    });
+//    templateMap = new HashMap<>();
+//    sftpConnectionHolder.getConnections().forEach((schema, connection) -> {
+//      templateMap.put(schema, cachingSessionFactory(connection));
+//    });
   }
 
   public IntegrationFlow createSimpleSftpOutboundFlow(SimpleSftpOutboundRule rule) {

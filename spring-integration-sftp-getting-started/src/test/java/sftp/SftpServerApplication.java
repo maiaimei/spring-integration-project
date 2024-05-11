@@ -33,9 +33,14 @@ public class SftpServerApplication {
   private static volatile boolean running;
 
   /**
-   * -Dport=9090 -DhomeDirectory=sftp-server-01 -Djava.io.tmpdir="C:\Users\lenovo\Desktop\tmp"
+   * -Dport=54662 -DhomeDirectory=jd -Djava.io.tmpdir="C:\Users\lenovo\Desktop\tmp\sftp-server"
    */
   public static void main(String[] args) throws Exception {
+    start();
+    //log.info("随机端口号：{}", getRandomPort());
+  }
+
+  public static void start() throws Exception {
     configureServer();
     startServer();
     final Scanner scanner = new Scanner(System.in);

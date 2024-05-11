@@ -11,6 +11,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.ConfigDataApplicationContextInitializer;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.integration.dsl.IntegrationFlow;
@@ -21,15 +22,19 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 @ActiveProfiles("local")
-@PropertySource("classpath:application-local.yml")
+@PropertySource("/application-local.yml")
+//@TestPropertySource("/application-local.yml")
+@ContextConfiguration(classes = {
+    SftpOutboundFactoryTest.ContextConfig.class}, initializers =
+    ConfigDataApplicationContextInitializer.class)
 @ExtendWith(SpringExtension.class)
-@ContextConfiguration(classes = {SftpOutboundFactoryTest.ContextConfig.class})
+//@SpringBootTest
 public class SftpOutboundFactoryTest {
 
   @Autowired
   private IntegrationFlowContext flowContext;
 
-  @Autowired
+  //@Autowired
   private SftpOutboundFactory sftpOutboundFactory;
 
   @BeforeEach
@@ -43,8 +48,8 @@ public class SftpOutboundFactoryTest {
     String tmpdir = System.getProperty("java.io.tmpdir");
 
     SimpleSftpOutboundRule rule = new SimpleSftpOutboundRule();
-    rule.setSchema("s1");
-    rule.setName("r1");
+    rule.setSchema("jd");
+    rule.setName("jd-tms");
     rule.setPattern("*.txt");
     rule.setLocal(tmpdir + "local");
     rule.setSent(tmpdir + "sent");
