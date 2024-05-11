@@ -9,5 +9,4 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class SftpConnectionHolder {
 
   private Map<String, SftpConnection> connections;
-  private String key;
 }

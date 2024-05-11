@@ -23,18 +23,17 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 @ActiveProfiles("local")
 @PropertySource("/application-local.yml")
-//@TestPropertySource("/application-local.yml")
-@ContextConfiguration(classes = {
-    SftpOutboundFactoryTest.ContextConfig.class}, initializers =
-    ConfigDataApplicationContextInitializer.class)
+@ContextConfiguration(
+    classes = {SftpOutboundFactoryTest.ContextConfig.class}, // 用来加载配置类
+    initializers = ConfigDataApplicationContextInitializer.class // 用来加载配置文件
+)
 @ExtendWith(SpringExtension.class)
-//@SpringBootTest
 public class SftpOutboundFactoryTest {
 
   @Autowired
   private IntegrationFlowContext flowContext;
 
-  //@Autowired
+  @Autowired
   private SftpOutboundFactory sftpOutboundFactory;
 
   @BeforeEach
@@ -50,15 +49,20 @@ public class SftpOutboundFactoryTest {
     SimpleSftpOutboundRule rule = new SimpleSftpOutboundRule();
     rule.setSchema("jd");
     rule.setName("jd-tms");
-    rule.setPattern("*.txt");
+    rule.setPattern("{spring:\\S+.txt}");
     rule.setLocal(tmpdir + "local");
     rule.setSent(tmpdir + "sent");
     rule.setRemote("/path/to/destination");
 
     final String uuid = UUID.randomUUID().toString();
-    IOUtils.writeStringToFile(String.format("%s%s%s%s",
-        rule.getLocal(), File.separator, uuid, StringConstants.FILE_SUFFIX_TXT), uuid);
-
+    String srcPath = String.format("%s%s%s%s%s",
+        rule.getLocal(), File.separator, uuid, StringConstants.FILE_SUFFIX_TXT,
+        StringConstants.FILE_SUFFIX_WRITING);
+    String destPath = String.format("%s%s%s%s",
+        rule.getLocal(), File.separator, uuid, StringConstants.FILE_SUFFIX_TXT);
+    IOUtils.writeStringToFile(srcPath, uuid);
+    IOUtils.renameTo(srcPath, destPath);
+    
     final IntegrationFlow flow = sftpOutboundFactory.createSimpleSftpOutboundFlow(rule);
     final String flowId = flowContext.registration(flow).register().getId();
 

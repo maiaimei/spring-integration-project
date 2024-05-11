@@ -91,7 +91,7 @@ public class IOUtils extends org.apache.commons.io.FileUtils {
     return Collections.emptyList();
   }
 
-  public boolean renameTo(String src, String dest) {
+  public static boolean renameTo(String src, String dest) {
     final File srcFile = new File(src);
     final File destFile = new File(dest);
     return srcFile.renameTo(destFile);
