@@ -1,7 +1,6 @@
 package cn.maiaimei.samples.integration.config;
 
 import cn.maiaimei.commons.lang.utils.FileUtils;
-import cn.maiaimei.samples.constants.IntegrationConstants;
 import cn.maiaimei.samples.integration.FileReadingProperties;
 import java.io.File;
 import lombok.extern.slf4j.Slf4j;
@@ -33,7 +32,7 @@ public class IntegrationContextConfig02 {
                     FileReadingMessageSource.WatchEventType.MODIFY
                 ),
             e -> e.poller(Pollers.cron(fileReadingProperties.getCron())
-                .errorChannel(IntegrationConstants.ERROR_CHANNEL)
+                .errorChannel("errorChannel")
             ))
         .wireTap(
             flow -> flow.handle(message -> log.info("Detected file {}", message.getPayload()))

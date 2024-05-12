@@ -5,9 +5,8 @@
     <file url="file://$PROJECT_DIR$/file-spring-integration-starter/src/main/resources" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/sftp-spring-integration-starter/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/sftp-spring-integration-starter/src/main/resources" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/spring-integration-lang/src/main/java" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/src/main/java" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/spring-integration-tests/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/spring-integration-tests/src/main/resources" charset="UTF-8" />
     <file url="PROJECT" charset="UTF-8" />
   </component>
 </project>
