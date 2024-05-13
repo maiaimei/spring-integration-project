@@ -11,10 +11,19 @@ import org.springframework.integration.file.remote.session.CachingSessionFactory
 import org.springframework.integration.sftp.session.DefaultSftpSessionFactory;
 import org.springframework.util.Assert;
 
+/**
+ * SFTP configuration
+ */
 @Configuration
 @EnableConfigurationProperties(SftpConnectionHolder.class)
 public class SftpConfig {
 
+  /**
+   * Construct a {@link CachingSessionFactory} map by the given connections.
+   *
+   * @param sftpConnectionHolder the SFTP connections config holder
+   * @return a {@link CachingSessionFactory} map
+   */
   @Bean
   public Map<String, CachingSessionFactory<DirEntry>> sessionFactoryMap(
       SftpConnectionHolder sftpConnectionHolder) {
@@ -28,6 +37,12 @@ public class SftpConfig {
     return sessionFactoryMap;
   }
 
+  /**
+   * Construct a {@link CachingSessionFactory} instance by the given connection.
+   *
+   * @param conn the connection to use
+   * @return a {@link CachingSessionFactory} instance
+   */
   private CachingSessionFactory<SftpClient.DirEntry> cachingSessionFactory(SftpConnection conn) {
     CachingSessionFactory<SftpClient.DirEntry> cachingSessionFactory =
         new CachingSessionFactory<>(defaultSftpSessionFactory(conn));
@@ -40,6 +55,12 @@ public class SftpConfig {
     return cachingSessionFactory;
   }
 
+  /**
+   * Construct a {@link DefaultSftpSessionFactory} instance by the given connection.
+   *
+   * @param conn the connection to use
+   * @return a {@link DefaultSftpSessionFactory} instance
+   */
   private DefaultSftpSessionFactory defaultSftpSessionFactory(SftpConnection conn) {
     DefaultSftpSessionFactory sessionFactory = new DefaultSftpSessionFactory();
     sessionFactory.setHost(conn.getHost());

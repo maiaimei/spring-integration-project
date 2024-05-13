@@ -28,11 +28,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 /**
- * Spring Integration的Sftp.outboundGateway不支持直接嵌入SFTP服务器。
- * <p>
- * 通常，Sftp.outboundGateway用于连接到一个实际的SFTP服务器，如一个运行在远程服务器上的OpenSSH或其他SFTP服务器。
- * <p>
- * 如果你想要创建一个嵌入的SFTP服务器，你可能需要考虑使用一个第三方库，如Apache Mina SSHD。
+ * SFTP outbound factory
  */
 @Slf4j
 @Component
@@ -69,8 +65,6 @@ public class SftpOutboundFactory implements ApplicationContextAware {
                 rule.getName(), message.getHeaders().get(FileHeaders.FILENAME), rule.getRemote())
         ))
         .handle(moveToSent(rule))
-//        .handle(message -> MessageBuilder.fromMessage(message).setHeaderIfAbsent(
-//            MessageHeaders.REPLY_CHANNEL, "nullChannel"))
         .get();
   }
 
@@ -96,7 +90,7 @@ public class SftpOutboundFactory implements ApplicationContextAware {
         String srcFile = FileUtils.getFilePath(rule.getLocal(), fileName);
         String destFile = FileUtils.getFilePath(rule.getSent(), fileName);
         FileUtils.moveFile(srcFile, destFile);
-        log.info("[{}] The file {} has been moved from {} to {}",
+        log.info("[{}] File {} has been moved from {} to {}",
             rule.getName(), fileName, rule.getLocal(), rule.getSent());
         return null;
       }
@@ -104,9 +98,10 @@ public class SftpOutboundFactory implements ApplicationContextAware {
   }
 
   /**
-   * RemoteFileTemplate 是Spring Integration中用于与远程文件系统交互的模板类。
-   * <p>
-   * 它提供了一种方便的方式来执行文件操作，如读取、写入和删除文件。
+   * Construct a {@link RemoteFileTemplate} instance by the given rule.
+   *
+   * @param rule the rule to construct instance
+   * @return a {@link RemoteFileTemplate} instance
    */
   private RemoteFileTemplate<DirEntry> template(BaseSftpOutboundRule rule) {
     RemoteFileTemplate<DirEntry> template = new RemoteFileTemplate<>(
@@ -115,11 +110,17 @@ public class SftpOutboundFactory implements ApplicationContextAware {
     template.setAutoCreateDirectory(Boolean.TRUE);
     template.setUseTemporaryFileName(Boolean.TRUE);
     template.setBeanFactory(applicationContext);
-    // must invoke method "afterPropertiesSet", otherwise throw exception
+    // must invoke method "afterPropertiesSet", 
+    // otherwise will throw java.lang.RuntimeException: No beanFactory
     template.afterPropertiesSet();
     return template;
   }
 
+  /**
+   * Validate the given rule
+   *
+   * @param rule the rule to validate
+   */
   private void validateRule(BaseSftpOutboundRule rule) {
     Assert.hasText(rule.getSchema(), "schema must be configured");
     Assert.hasText(rule.getName(), "name must be configured");
