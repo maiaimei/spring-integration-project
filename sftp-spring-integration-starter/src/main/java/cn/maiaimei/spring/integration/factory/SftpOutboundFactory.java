@@ -1,6 +1,7 @@
 package cn.maiaimei.spring.integration.factory;
 
 import cn.maiaimei.commons.lang.utils.FileUtils;
+import cn.maiaimei.commons.lang.utils.StringUtils;
 import cn.maiaimei.spring.integration.config.rule.BaseSftpOutboundRule;
 import cn.maiaimei.spring.integration.config.rule.SimpleSftpOutboundRule;
 import java.io.File;
@@ -24,6 +25,7 @@ import org.springframework.integration.file.remote.session.CachingSessionFactory
 import org.springframework.integration.handler.AbstractReplyProducingMessageHandler;
 import org.springframework.integration.sftp.dsl.Sftp;
 import org.springframework.messaging.Message;
+import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -35,6 +37,7 @@ import org.springframework.util.Assert;
 public class SftpOutboundFactory implements ApplicationContextAware {
 
   private static final String PAYLOAD = "payload";
+  private static final String SEND_STATUS = "sendStatus";
 
   private ApplicationContext applicationContext;
 
@@ -47,9 +50,10 @@ public class SftpOutboundFactory implements ApplicationContextAware {
   }
 
   /**
-   * 在Spring Integration中，Sftp.outboundGateway用于通过SFTP协议与远程服务器进行文件传输。
-   * 由于Sftp.outboundGateway是一个请求-响应模式的消息传递组件，它期望获得一个响应。
-   * 如果你不想发送响应，可以通过配置reply-channel属性指定一个不存在的通道，或者使用null-channel。
+   * Construct a {@link IntegrationFlow} instance by the given rule.
+   *
+   * @param rule the rule to use
+   * @return a {@link IntegrationFlow} instance
    */
   public IntegrationFlow createSimpleSftpOutboundFlow(SimpleSftpOutboundRule rule) {
     validateRule(rule);
@@ -64,10 +68,18 @@ public class SftpOutboundFactory implements ApplicationContextAware {
             message -> log.info("[{}] File {} has been uploaded to {}",
                 rule.getName(), message.getHeaders().get(FileHeaders.FILENAME), rule.getRemote())
         ))
+        .handle(message -> MessageBuilder.fromMessage(message)
+            .setHeaderIfAbsent(SEND_STATUS, SendStatus.SECCESS.name()))
         .handle(moveToSent(rule))
         .get();
   }
 
+  /**
+   * Construct a {@link FileReadingMessageSource} instance by the given rule.
+   *
+   * @param rule the rule to use
+   * @return a {@link FileReadingMessageSource} instance
+   */
   private FileReadingMessageSource fileReadingMessageSource(BaseSftpOutboundRule rule) {
     CompositeFileListFilter<File> filter = new CompositeFileListFilter<>();
     filter.addFilter(new SimplePatternFileListFilter(rule.getPattern()));
@@ -82,16 +94,28 @@ public class SftpOutboundFactory implements ApplicationContextAware {
     return messageSource;
   }
 
+  /**
+   * Move the file from local to sent or send depending on status.
+   *
+   * @param rule the rule to use
+   * @return a {@link AbstractReplyProducingMessageHandler} instance
+   */
   private AbstractReplyProducingMessageHandler moveToSent(BaseSftpOutboundRule rule) {
     return new AbstractReplyProducingMessageHandler() {
       @Override
       protected Object handleRequestMessage(Message<?> requestMessage) {
         final String fileName = (String) requestMessage.getHeaders().get(FileHeaders.FILENAME);
+        final String sendStatus = (String) requestMessage.getHeaders().get(SEND_STATUS);
+        String postSendDestination = rule.getSent();
+        if (!StringUtils.hasText(sendStatus) || SendStatus.FAILED.name().equals(sendStatus)) {
+          postSendDestination = rule.getSend();
+        }
         String srcFile = FileUtils.getFilePath(rule.getLocal(), fileName);
-        String destFile = FileUtils.getFilePath(rule.getSent(), fileName);
+        String destFile = FileUtils.getFilePath(postSendDestination, fileName);
         FileUtils.moveFile(srcFile, destFile);
         log.info("[{}] File {} has been moved from {} to {}",
-            rule.getName(), fileName, rule.getLocal(), rule.getSent());
+            rule.getName(), fileName, rule.getLocal(), postSendDestination);
+        // return null to terminate the flow
         return null;
       }
     };
@@ -128,6 +152,11 @@ public class SftpOutboundFactory implements ApplicationContextAware {
     Assert.hasText(rule.getLocal(), "local must be configured");
     Assert.hasText(rule.getRemote(), "remote must be configured");
     Assert.hasText(rule.getSent(), "sent must be configured");
+  }
+
+  private enum SendStatus {
+    SECCESS,
+    FAILED
   }
 
 }
