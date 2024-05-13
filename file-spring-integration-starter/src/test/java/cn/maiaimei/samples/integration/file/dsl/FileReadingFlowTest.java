@@ -56,7 +56,7 @@ public class FileReadingFlowTest {
         evens.add(i);
       }
       FileUtils.writeStringToFile(
-          FileUtils.getPath(fileReadingProperties.getSource(), i + extension),
+          FileUtils.getFilePath(fileReadingProperties.getSource(), i + extension),
           String.valueOf(i),
           StandardCharsets.UTF_8
       );

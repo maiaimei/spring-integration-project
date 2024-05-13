@@ -7,8 +7,11 @@ import cn.maiaimei.spring.integration.TestApplication;
 import cn.maiaimei.spring.integration.config.SftpConfig;
 import cn.maiaimei.spring.integration.config.rule.SimpleSftpOutboundRule;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import org.apache.sshd.sftp.client.SftpClient.DirEntry;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,6 +21,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.dsl.context.IntegrationFlowContext;
+import org.springframework.integration.file.remote.session.CachingSessionFactory;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -37,10 +41,18 @@ public class SftpOutboundFactoryTest extends BaseTest {
   @Autowired
   private SftpOutboundFactory sftpOutboundFactory;
 
+  @Autowired
+  private Map<String, CachingSessionFactory<DirEntry>> sessionFactoryMap;
+
   @BeforeEach
   public void setUp() {
     // java -Djava.io.tmpdir=/path/to/tmpdir YourApp
     System.setProperty("java.io.tmpdir", TMP_DIR);
+  }
+
+  @AfterEach
+  public void tearDown() {
+    sessionFactoryMap.forEach((schema, factory) -> factory.destroy());
   }
 
   @Test
@@ -51,8 +63,8 @@ public class SftpOutboundFactoryTest extends BaseTest {
     rule.setSchema("jd");
     rule.setName("jd-tms");
     rule.setPattern("{spring:\\S+.txt}");
-    rule.setLocal(FileUtils.getPath(tmpdir, "local"));
-    rule.setSent(FileUtils.getPath(tmpdir, "sent"));
+    rule.setLocal(FileUtils.getFilePath(tmpdir, "local"));
+    rule.setSent(FileUtils.getFilePath(tmpdir, "sent"));
     rule.setRemote("/path/to/destination");
 
     final String uuid = UUID.randomUUID().toString();

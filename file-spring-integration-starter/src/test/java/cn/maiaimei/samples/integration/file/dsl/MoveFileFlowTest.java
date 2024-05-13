@@ -41,7 +41,7 @@ public class MoveFileFlowTest {
     String name = UUID.randomUUID().toString();
     String extension = FileConstants.TXT;
     FileUtils.writeStringToFile(
-        FileUtils.getPath(moveFileProperties.getSource(), name + extension), name,
+        FileUtils.getFilePath(moveFileProperties.getSource(), name + extension), name,
         StandardCharsets.UTF_8
     );
 
