@@ -48,4 +48,12 @@ public class BaseSftpOutboundRule {
    * whether passes files only one time
    */
   private boolean acceptOnce = false;
+  /**
+   * maximum retries
+   */
+  private int maxRetries;
+  /**
+   * maximum retry wait time
+   */
+  private long maxRetryWaitTime;
 }

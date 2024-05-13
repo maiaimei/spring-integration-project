@@ -7,6 +7,7 @@ import cn.maiaimei.spring.integration.config.rule.SimpleSftpOutboundRule;
 import java.io.File;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
+import org.aopalliance.aop.Advice;
 import org.apache.sshd.sftp.client.SftpClient.DirEntry;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,8 +25,13 @@ import org.springframework.integration.file.remote.gateway.AbstractRemoteFileOut
 import org.springframework.integration.file.remote.session.CachingSessionFactory;
 import org.springframework.integration.handler.AbstractReplyProducingMessageHandler;
 import org.springframework.integration.sftp.dsl.Sftp;
+import org.springframework.integration.sftp.gateway.SftpOutboundGateway;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
+import org.springframework.retry.backoff.FixedBackOffPolicy;
+import org.springframework.retry.interceptor.RetryOperationsInterceptor;
+import org.springframework.retry.policy.SimpleRetryPolicy;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -72,6 +78,53 @@ public class SftpOutboundFactory implements ApplicationContextAware {
             .setHeaderIfAbsent(SEND_STATUS, SendStatus.SECCESS.name()))
         .handle(moveToSent(rule))
         .get();
+  }
+
+  /**
+   * Construct a {@link IntegrationFlow} instance by the given rule.
+   *
+   * @param rule the rule to use
+   * @return a {@link IntegrationFlow} instance
+   */
+  public IntegrationFlow createAdvancedSftpOutboundFlow(SimpleSftpOutboundRule rule) {
+    validateRule(rule);
+    return IntegrationFlow.from(fileReadingMessageSource(rule),
+            e -> e.poller(p -> p.cron(rule.getCron()).maxMessagesPerPoll(rule.getMaxMessagesPerPoll())))
+        .wireTap(flow -> flow.handle(
+            message -> log.info("[{}] File {} is detected in {}",
+                rule.getName(), message.getHeaders().get(FileHeaders.FILENAME), rule.getLocal())
+        ))
+        .handle(new SftpOutboundGateway(template(rule), Command.PUT.getCommand(), PAYLOAD),
+            e -> e.advice(sftpOutboundGatewayAdvice(rule)))
+        .wireTap(flow -> flow.handle(
+            message -> log.info("[{}] File {} has been uploaded to {}",
+                rule.getName(), message.getHeaders().get(FileHeaders.FILENAME), rule.getRemote())
+        ))
+        .handle(message -> MessageBuilder.fromMessage(message)
+            .setHeaderIfAbsent(SEND_STATUS, SendStatus.SECCESS.name()))
+        .handle(moveToSent(rule))
+        .get();
+  }
+
+  /**
+   * Construct a {@link Advice} instance by the given rule.
+   *
+   * @param rule the rule to use
+   * @return a {@link Advice} instance
+   */
+  private Advice sftpOutboundGatewayAdvice(BaseSftpOutboundRule rule) {
+    int maxAttempts = rule.getMaxRetries() > 0 ? rule.getMaxRetries() : 1;
+    long backOffPeriod = rule.getMaxRetryWaitTime() > 0 ? rule.getMaxRetryWaitTime() : 1;
+    final SimpleRetryPolicy retryPolicy = new SimpleRetryPolicy();
+    retryPolicy.setMaxAttempts(maxAttempts);
+    final FixedBackOffPolicy backOffPolicy = new FixedBackOffPolicy();
+    backOffPolicy.setBackOffPeriod(backOffPeriod);
+    final RetryTemplate retryTemplate = new RetryTemplate();
+    retryTemplate.setRetryPolicy(retryPolicy);
+    retryTemplate.setBackOffPolicy(backOffPolicy);
+    final RetryOperationsInterceptor interceptor = new RetryOperationsInterceptor();
+    interceptor.setRetryOperations(retryTemplate);
+    return interceptor;
   }
 
   /**
