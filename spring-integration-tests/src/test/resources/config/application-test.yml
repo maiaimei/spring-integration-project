@@ -1,0 +1,29 @@
+# 本地开发环境
+sftp:
+  outbound:
+    retry:
+      maxAttempts: 4
+      waitTime: 300000
+  connections:
+    jd:
+      host: 127.0.0.1
+      port: 54662
+      user: user
+      privateKey: classpath:/META-INF/keys/sftp_rsa
+      privateKeyPassphrase: password
+    unknown-host:
+      host: 888.888.888.888
+      port: 54662
+      user: user
+      privateKey: classpath:/META-INF/keys/sftp_rsa
+      privateKeyPassphrase: password
+    unknown-port:
+      host: 127.0.0.1
+      port: 12345
+      user: user
+      privateKey: classpath:/META-INF/keys/sftp_rsa
+      privateKeyPassphrase: password
+    unknown-keys:
+      host: 127.0.0.1
+      port: 54662
+      user: user

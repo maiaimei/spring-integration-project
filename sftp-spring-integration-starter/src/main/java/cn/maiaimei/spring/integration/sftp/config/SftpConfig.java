@@ -1,4 +1,4 @@
-package cn.maiaimei.spring.integration.config;
+package cn.maiaimei.spring.integration.sftp.config;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -28,7 +28,7 @@ public class SftpConfig {
   public Map<String, CachingSessionFactory<DirEntry>> sessionFactoryMap(
       SftpConnectionHolder sftpConnectionHolder) {
     Assert.notNull(sftpConnectionHolder, "sftpConnectionHolder must not be null");
-    Assert.notEmpty(sftpConnectionHolder.getConnections(), "sftp.connections must be configured");
+    Assert.notEmpty(sftpConnectionHolder.getConnections(), "connections must not be null");
     Map<String, CachingSessionFactory<DirEntry>> sessionFactoryMap = new HashMap<>(
         sftpConnectionHolder.getConnections().size());
     sftpConnectionHolder.getConnections().forEach((schema, connection) -> {

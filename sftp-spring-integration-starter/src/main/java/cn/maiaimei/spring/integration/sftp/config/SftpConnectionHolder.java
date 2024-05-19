@@ -1,4 +1,4 @@
-package cn.maiaimei.spring.integration.config;
+package cn.maiaimei.spring.integration.sftp.config;
 
 import java.util.Map;
 import lombok.Data;

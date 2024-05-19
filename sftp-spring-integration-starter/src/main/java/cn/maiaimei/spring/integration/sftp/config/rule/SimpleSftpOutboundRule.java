@@ -1,4 +1,4 @@
-package cn.maiaimei.spring.integration.config.rule;
+package cn.maiaimei.spring.integration.sftp.config.rule;
 
 import lombok.EqualsAndHashCode;
 

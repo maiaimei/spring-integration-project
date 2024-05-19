@@ -3,7 +3,7 @@ package cn.maiaimei.spring.integration.sftp;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 import cn.maiaimei.commons.lang.utils.StringUtils;
-import cn.maiaimei.spring.integration.config.SftpConnection;
+import cn.maiaimei.spring.integration.sftp.config.SftpConnection;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;

@@ -1,4 +1,4 @@
-package cn.maiaimei.spring.integration.config.rule;
+package cn.maiaimei.spring.integration.sftp.config.rule;
 
 import lombok.Data;
 
@@ -41,19 +41,19 @@ public class BaseSftpOutboundRule {
    */
   private String sent;
   /**
-   * the files in this folder have not been sent to the remote host
-   */
-  private String send;
-  /**
    * whether passes files only one time
    */
   private boolean acceptOnce = false;
   /**
-   * maximum retries
+   * the maximum number of retry attempts including the initial attempt
+   * <p>
+   * includes the initial attempt before the retries begin so, generally, will be {@code >= 1}.
+   * <p>
+   * for example setting this property to 3 means 3 attempts total (initial + 2 retries).
    */
   private int maxRetries;
   /**
-   * maximum retry wait time
+   * maximum retry wait time in milliseconds. Cannot be &lt; 1. Default value is 1000ms.
    */
   private long maxRetryWaitTime;
 }
