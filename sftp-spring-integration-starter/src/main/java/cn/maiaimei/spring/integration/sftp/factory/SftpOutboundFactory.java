@@ -130,8 +130,8 @@ public class SftpOutboundFactory {
         } catch (Exception e) {
           sentStatus = SendStatus.FAILED.name();
           log.error(
-              String.format("[%s] File %s failed to upload to %s after %s retry attempts due to %s",
-                  rule.getName(), fileName, rule.getRemote(), maxAttempts, e.getMessage()), e);
+              String.format("[%s] File %s failed to upload to %s after %s retry attempts",
+                  rule.getName(), fileName, rule.getRemote(), maxAttempts), e);
         }
         return MessageBuilder.withPayload(message.getPayload())
             .copyHeaders(message.getHeaders())
@@ -161,7 +161,8 @@ public class SftpOutboundFactory {
           Message<?> requestMessage = (Message<?>) message;
           final String fileName = (String) requestMessage.getHeaders().get(FileHeaders.FILENAME);
           log.error(String.format("[%s] File %s failed to upload to %s for the %s time",
-              rule.getName(), fileName, rule.getRemote(), retryCount), throwable);
+                  rule.getName(), fileName, rule.getRemote(), retryCount),
+              throwable);
         }
       }
     };
