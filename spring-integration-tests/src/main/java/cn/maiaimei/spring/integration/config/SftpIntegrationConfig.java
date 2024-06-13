@@ -69,7 +69,7 @@ public class SftpIntegrationConfig {
       @Override
       public Message<?> preSend(Message<?> message, MessageChannel channel) {
         String filename = (String) message.getHeaders().get(FileHeaders.FILENAME);
-        log.info("file [{}] is retrieved in input folder", filename);
+        log.info("file [{}] is detected in input folder", filename);
         return message;
       }
 
@@ -78,9 +78,13 @@ public class SftpIntegrationConfig {
           Exception ex) {
         String filename = (String) message.getHeaders().get(FileHeaders.FILENAME);
         if (sent) {
-          log.info("file [{}] is sent to output folder", filename);
+          log.info("file [{}] has been moved to output folder", filename);
         } else {
-          log.error(String.format("file [%s] is failed sent to output folder", filename), ex);
+          log.error(String.format("file [%s] failed to moved to output folder", filename), ex);
+          String filepath = ((File) message.getHeaders()
+              .get(FileHeaders.ORIGINAL_FILE)).getAbsolutePath();
+          FileUtils.moveFile(filepath,
+              "C:\\Users\\lenovo\\Desktop\\tmp\\output\\failed\\" + filename);
         }
       }
     };
