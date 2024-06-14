@@ -3,6 +3,7 @@ package cn.maiaimei.spring.integration.sftp.factory;
 import cn.maiaimei.commons.lang.utils.FileUtils;
 import cn.maiaimei.spring.integration.sftp.config.rule.BaseSftpOutboundRule;
 import cn.maiaimei.spring.integration.sftp.config.rule.SimpleSftpOutboundRule;
+import cn.maiaimei.spring.integration.sftp.constants.SftpConstants;
 import java.io.File;
 import java.util.Map;
 import java.util.Objects;
@@ -39,11 +40,6 @@ import org.springframework.util.Assert;
 @Slf4j
 public class SftpOutboundFactory {
 
-  private static final String ERROR = "error";
-  private static final String MESSAGE = "message";
-  private static final String PAYLOAD = "payload";
-  private static final String SEND_STATUS = "sendStatus";
-
   private ApplicationContext applicationContext;
 
   private Map<String, CachingSessionFactory<DirEntry>> sessionFactoryMap;
@@ -71,7 +67,7 @@ public class SftpOutboundFactory {
             message -> log.info("[{}] File {} is detected in {}",
                 rule.getName(), message.getHeaders().get(FileHeaders.FILENAME), rule.getLocal())
         ))
-        .handle(Sftp.outboundGateway(template(rule), Command.PUT, PAYLOAD))
+        .handle(Sftp.outboundGateway(template(rule), Command.PUT, SftpConstants.PAYLOAD))
         .wireTap(flow -> flow.handle(
             message -> log.info("[{}] File {} has been uploaded to {}",
                 rule.getName(), message.getHeaders().get(FileHeaders.FILENAME), rule.getRemote())
@@ -94,107 +90,11 @@ public class SftpOutboundFactory {
             message -> log.info("[{}] File {} is detected in {}",
                 rule.getName(), message.getHeaders().get(FileHeaders.FILENAME), rule.getLocal())
         ))
-        .handle(new SftpOutboundGateway(template(rule), Command.PUT.getCommand(), PAYLOAD),
+        .handle(new SftpOutboundGateway(template(rule), Command.PUT.getCommand(),
+                SftpConstants.PAYLOAD),
             e -> e.advice(sftpOutboundGatewayAdvice(rule)))
         .handle(moveToSent(rule))
         .get();
-  }
-
-  /**
-   * Construct a {@link Advice} instance by the given rule.
-   *
-   * @param rule the rule to use
-   * @return a {@link Advice} instance
-   */
-  private Advice sftpOutboundGatewayAdvice(BaseSftpOutboundRule rule) {
-    int maxAttempts = getMaxRetries(rule.getMaxRetries());
-    long backOffPeriod = getMaxRetries(rule.getMaxRetryWaitTime());
-    final SimpleRetryPolicy retryPolicy = new SimpleRetryPolicy();
-    retryPolicy.setMaxAttempts(maxAttempts);
-    final FixedBackOffPolicy backOffPolicy = new FixedBackOffPolicy();
-    backOffPolicy.setBackOffPeriod(backOffPeriod);
-    final RetryTemplate retryTemplate = new RetryTemplate();
-    retryTemplate.setRetryPolicy(retryPolicy);
-    retryTemplate.setBackOffPolicy(backOffPolicy);
-    final RequestHandlerRetryAdvice advice = new RequestHandlerRetryAdvice() {
-      @Override
-      protected Object doInvoke(ExecutionCallback callback, Object target, Message<?> message) {
-        log.info("The maximum number of retry attempts including the initial attempt is {}, wait "
-            + "time in milliseconds is {}", maxAttempts, backOffPeriod);
-        String fileName = (String) message.getHeaders().get(FileHeaders.FILENAME);
-        String sentStatus = SendStatus.SECCESS.name();
-        try {
-          super.doInvoke(callback, target, message);
-          log.info("[{}] File {} has been uploaded to {}",
-              rule.getName(), fileName, rule.getRemote());
-        } catch (Exception e) {
-          sentStatus = SendStatus.FAILED.name();
-          log.error(
-              String.format("[%s] File %s failed to upload to %s after %s retry attempts",
-                  rule.getName(), fileName, rule.getRemote(), maxAttempts), e);
-        }
-        return MessageBuilder.withPayload(message.getPayload())
-            .copyHeaders(message.getHeaders())
-            .setHeaderIfAbsent(SEND_STATUS, sentStatus)
-            .build();
-      }
-
-      @Override
-      public <T, E extends Throwable> void onSuccess(RetryContext context,
-          RetryCallback<T, E> callback, T result) {
-        final Object message = context.getAttribute(MESSAGE);
-        final int retryCount = context.getRetryCount();
-        if (Objects.nonNull(message) && retryCount > 0) {
-          Message<?> requestMessage = (Message<?>) message;
-          final String fileName = (String) requestMessage.getHeaders().get(FileHeaders.FILENAME);
-          log.info("[{}] File {} has been uploaded to {} for the {} time",
-              rule.getName(), fileName, rule.getRemote(), retryCount);
-        }
-      }
-
-      @Override
-      public <T, E extends Throwable> void onError(RetryContext context,
-          RetryCallback<T, E> callback, Throwable throwable) {
-        final Object message = context.getAttribute(MESSAGE);
-        final int retryCount = context.getRetryCount();
-        if (Objects.nonNull(message) && retryCount > 0) {
-          Message<?> requestMessage = (Message<?>) message;
-          final String fileName = (String) requestMessage.getHeaders().get(FileHeaders.FILENAME);
-          log.error(String.format("[%s] File %s failed to upload to %s for the %s time",
-                  rule.getName(), fileName, rule.getRemote(), retryCount),
-              throwable);
-        }
-      }
-    };
-    advice.setRetryTemplate(retryTemplate);
-    retryTemplate.registerListener(advice);
-    return advice;
-  }
-
-  /**
-   * Get the maximum number of retry attempts
-   *
-   * @return the maximum number of retry attempts
-   */
-  private Integer getMaxRetries(int maxRetries) {
-    if (maxRetries > 0) {
-      return maxRetries;
-    }
-    return applicationContext.getEnvironment()
-        .getProperty("sftp.outbound.retry.maxAttempts", Integer.class);
-  }
-
-  /**
-   * Get the maximum retry wait time in milliseconds
-   *
-   * @return the maximum retry wait time in milliseconds
-   */
-  private Long getMaxRetries(long maxRetryWaitTime) {
-    if (maxRetryWaitTime > 0) {
-      return maxRetryWaitTime;
-    }
-    return applicationContext.getEnvironment()
-        .getProperty("sftp.outbound.retry.waitTime", Long.class);
   }
 
   /**
@@ -229,8 +129,9 @@ public class SftpOutboundFactory {
       protected Object handleRequestMessage(Message<?> requestMessage) {
         final String fileName = (String) requestMessage.getHeaders().get(FileHeaders.FILENAME);
         String sent = rule.getSent();
-        if (SendStatus.FAILED.name().equals(requestMessage.getHeaders().get(SEND_STATUS))) {
-          sent = FileUtils.normalizePath(rule.getSent() + File.separator + ERROR);
+        if (SftpConstants.FAILED.equals(
+            requestMessage.getHeaders().get(SftpConstants.SEND_STATUS))) {
+          sent = FileUtils.normalizePath(rule.getSent() + File.separator + SftpConstants.ERROR);
         }
         String srcFile = FileUtils.getFilePath(rule.getLocal(), fileName);
         String destFile = FileUtils.getFilePath(sent, fileName);
@@ -276,9 +177,117 @@ public class SftpOutboundFactory {
     Assert.hasText(rule.getSent(), "sent must be configured");
   }
 
-  private enum SendStatus {
-    SECCESS,
-    FAILED
+  /**
+   * Construct a {@link Advice} instance by the given rule.
+   *
+   * @param rule the rule to use
+   * @return a {@link Advice} instance
+   */
+  private Advice sftpOutboundGatewayAdvice(BaseSftpOutboundRule rule) {
+    int maxAttempts = getMaxRetries(rule.getMaxRetries());
+    long backOffPeriod = getMaxRetries(rule.getMaxRetryWaitTime());
+    final SimpleRetryPolicy retryPolicy = new SimpleRetryPolicy();
+    retryPolicy.setMaxAttempts(maxAttempts);
+    final FixedBackOffPolicy backOffPolicy = new FixedBackOffPolicy();
+    backOffPolicy.setBackOffPeriod(backOffPeriod);
+    final RetryTemplate retryTemplate = new RetryTemplate();
+    retryTemplate.setRetryPolicy(retryPolicy);
+    retryTemplate.setBackOffPolicy(backOffPolicy);
+    final RequestHandlerRetryAdvice advice = new CustomRequestHandlerRetryAdvice(rule, maxAttempts,
+        backOffPeriod);
+    advice.setRetryTemplate(retryTemplate);
+    retryTemplate.registerListener(advice);
+    return advice;
+  }
+
+  /**
+   * Get the maximum number of retry attempts
+   *
+   * @return the maximum number of retry attempts
+   */
+  private Integer getMaxRetries(int maxRetries) {
+    if (maxRetries > 0) {
+      return maxRetries;
+    }
+    return applicationContext.getEnvironment()
+        .getProperty("sftp.outbound.retry.maxAttempts", Integer.class);
+  }
+
+  /**
+   * Get the maximum retry wait time in milliseconds
+   *
+   * @return the maximum retry wait time in milliseconds
+   */
+  private Long getMaxRetries(long maxRetryWaitTime) {
+    if (maxRetryWaitTime > 0) {
+      return maxRetryWaitTime;
+    }
+    return applicationContext.getEnvironment()
+        .getProperty("sftp.outbound.retry.waitTime", Long.class);
+  }
+
+  private static class CustomRequestHandlerRetryAdvice extends RequestHandlerRetryAdvice {
+
+    private final BaseSftpOutboundRule rule;
+    private final int maxAttempts;
+    private final long backOffPeriod;
+
+    public CustomRequestHandlerRetryAdvice(BaseSftpOutboundRule rule, int maxAttempts,
+        long backOffPeriod) {
+      this.rule = rule;
+      this.maxAttempts = maxAttempts;
+      this.backOffPeriod = backOffPeriod;
+    }
+
+    @Override
+    protected Object doInvoke(ExecutionCallback callback, Object target, Message<?> message) {
+      log.info("The maximum number of retry attempts including the initial attempt is {}, wait "
+          + "time in milliseconds is {}", maxAttempts, backOffPeriod);
+      String fileName = (String) message.getHeaders().get(FileHeaders.FILENAME);
+      String sentStatus = SftpConstants.SUCCESS;
+      try {
+        super.doInvoke(callback, target, message);
+        log.info("[{}] File {} has been uploaded to {}",
+            rule.getName(), fileName, rule.getRemote());
+      } catch (Exception e) {
+        sentStatus = SftpConstants.FAILED;
+        log.error(
+            String.format("[%s] File %s failed to upload to %s after %s retry attempts",
+                rule.getName(), fileName, rule.getRemote(), maxAttempts), e);
+      }
+      return MessageBuilder.withPayload(message.getPayload())
+          .copyHeaders(message.getHeaders())
+          .setHeaderIfAbsent(SftpConstants.SEND_STATUS, sentStatus)
+          .build();
+    }
+
+    @Override
+    public <T, E extends Throwable> void onSuccess(RetryContext context,
+        RetryCallback<T, E> callback, T result) {
+      final Object message = context.getAttribute(SftpConstants.MESSAGE);
+      final int retryCount = context.getRetryCount();
+      if (Objects.nonNull(message) && retryCount > 0) {
+        Message<?> requestMessage = (Message<?>) message;
+        final String fileName = (String) requestMessage.getHeaders().get(FileHeaders.FILENAME);
+        log.info("[{}] File {} has been uploaded to {} for the {} time",
+            rule.getName(), fileName, rule.getRemote(), retryCount);
+      }
+    }
+
+    @Override
+    public <T, E extends Throwable> void onError(RetryContext context,
+        RetryCallback<T, E> callback, Throwable throwable) {
+      final Object message = context.getAttribute(SftpConstants.MESSAGE);
+      final int retryCount = context.getRetryCount();
+      if (Objects.nonNull(message) && retryCount > 0) {
+        Message<?> requestMessage = (Message<?>) message;
+        final String fileName = (String) requestMessage.getHeaders().get(FileHeaders.FILENAME);
+        log.error(String.format("[%s] File %s failed to upload to %s for the %s time",
+                rule.getName(), fileName, rule.getRemote(), retryCount),
+            throwable);
+      }
+    }
+
   }
 
 }
