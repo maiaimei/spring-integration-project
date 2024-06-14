@@ -5,12 +5,11 @@ import cn.maiaimei.spring.integration.sftp.config.rule.BaseSftpOutboundRule;
 import cn.maiaimei.spring.integration.sftp.config.rule.SimpleSftpOutboundRule;
 import cn.maiaimei.spring.integration.sftp.constants.SftpConstants;
 import java.io.File;
-import java.util.Map;
 import java.util.Objects;
-import lombok.extern.slf4j.Slf4j;
 import org.aopalliance.aop.Advice;
 import org.apache.sshd.sftp.client.SftpClient.DirEntry;
-import org.springframework.context.ApplicationContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.expression.common.LiteralExpression;
 import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.file.FileHeaders;
@@ -20,7 +19,6 @@ import org.springframework.integration.file.filters.CompositeFileListFilter;
 import org.springframework.integration.file.filters.SimplePatternFileListFilter;
 import org.springframework.integration.file.remote.RemoteFileTemplate;
 import org.springframework.integration.file.remote.gateway.AbstractRemoteFileOutboundGateway.Command;
-import org.springframework.integration.file.remote.session.CachingSessionFactory;
 import org.springframework.integration.handler.AbstractReplyProducingMessageHandler;
 import org.springframework.integration.handler.advice.RequestHandlerRetryAdvice;
 import org.springframework.integration.sftp.dsl.Sftp;
@@ -37,21 +35,7 @@ import org.springframework.util.Assert;
 /**
  * SFTP outbound factory
  */
-@Slf4j
-public class SftpOutboundFactory {
-
-  private ApplicationContext applicationContext;
-
-  private Map<String, CachingSessionFactory<DirEntry>> sessionFactoryMap;
-
-  public void setApplicationContext(ApplicationContext applicationContext) {
-    this.applicationContext = applicationContext;
-  }
-
-  public void setSessionFactoryMap(
-      Map<String, CachingSessionFactory<DirEntry>> sessionFactoryMap) {
-    this.sessionFactoryMap = sessionFactoryMap;
-  }
+public class SftpOutboundFactory extends BaseSftpFactory {
 
   /**
    * Construct a {@link IntegrationFlow} instance by the given rule.
@@ -228,12 +212,14 @@ public class SftpOutboundFactory {
 
   private static class CustomRequestHandlerRetryAdvice extends RequestHandlerRetryAdvice {
 
+    private final Logger log;
     private final BaseSftpOutboundRule rule;
     private final int maxAttempts;
     private final long backOffPeriod;
 
     public CustomRequestHandlerRetryAdvice(BaseSftpOutboundRule rule, int maxAttempts,
         long backOffPeriod) {
+      this.log = LoggerFactory.getLogger(CustomRequestHandlerRetryAdvice.class);
       this.rule = rule;
       this.maxAttempts = maxAttempts;
       this.backOffPeriod = backOffPeriod;
