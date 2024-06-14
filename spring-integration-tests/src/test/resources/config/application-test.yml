@@ -1,4 +1,4 @@
-# 本地开发环境
+# 单元测试环境
 sftp:
   outbound:
     retry:
@@ -11,7 +11,7 @@ sftp:
       user: user
       privateKey: classpath:/META-INF/keys/sftp_rsa
       privateKeyPassphrase: password
-      poolSize: 5
+      poolSize: 10
     unknown-host:
       host: 888.888.888.888
       port: 54662

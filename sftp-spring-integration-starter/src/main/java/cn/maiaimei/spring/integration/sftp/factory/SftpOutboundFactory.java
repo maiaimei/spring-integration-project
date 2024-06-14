@@ -112,16 +112,17 @@ public class SftpOutboundFactory extends BaseSftpFactory {
       @Override
       protected Object handleRequestMessage(Message<?> requestMessage) {
         final String fileName = (String) requestMessage.getHeaders().get(FileHeaders.FILENAME);
-        String sent = rule.getSent();
+        String archive = rule.getArchive();
         if (SftpConstants.FAILED.equals(
             requestMessage.getHeaders().get(SftpConstants.SEND_STATUS))) {
-          sent = FileUtils.normalizePath(rule.getSent() + File.separator + SftpConstants.ERROR);
+          archive = FileUtils.normalizePath(
+              rule.getArchive() + File.separator + SftpConstants.ERROR);
         }
         String srcFile = FileUtils.getFilePath(rule.getLocal(), fileName);
-        String destFile = FileUtils.getFilePath(sent, fileName);
+        String destFile = FileUtils.getFilePath(archive, fileName);
         FileUtils.moveFile(srcFile, destFile);
         log.info("[{}] File {} has been moved from {} to {}",
-            rule.getName(), fileName, rule.getLocal(), sent);
+            rule.getName(), fileName, rule.getLocal(), archive);
         // return null to terminate the flow
         return null;
       }
@@ -158,7 +159,7 @@ public class SftpOutboundFactory extends BaseSftpFactory {
     Assert.hasText(rule.getPattern(), "pattern must be configured");
     Assert.hasText(rule.getLocal(), "local must be configured");
     Assert.hasText(rule.getRemote(), "remote must be configured");
-    Assert.hasText(rule.getSent(), "sent must be configured");
+    Assert.hasText(rule.getArchive(), "archive must be configured");
   }
 
   /**

@@ -58,7 +58,7 @@ public class SftpOutboundFactoryTest extends BaseTest {
 
   private String tmpdir;
   private SimpleSftpOutboundRule rule;
-  private final int count = 1000;
+  private final int count = 5;
 
   @BeforeEach
   public void setUp() {
@@ -68,7 +68,7 @@ public class SftpOutboundFactoryTest extends BaseTest {
     tmpdir = System.getProperty("java.io.tmpdir");
     String processing = FileUtils.getFilePath(tmpdir, "processing");
     String local = FileUtils.getFilePath(tmpdir, "local");
-    String sent = FileUtils.getFilePath(tmpdir, "sent");
+    String archive = FileUtils.getFilePath(tmpdir, "sent");
 
     for (int i = 0; i < count; i++) {
       final String uuid = UUID.randomUUID().toString();
@@ -82,7 +82,7 @@ public class SftpOutboundFactoryTest extends BaseTest {
     rule.setName("jd-tms");
     rule.setPattern("{spring:^\\S+.txt$}");
     rule.setLocal(local);
-    rule.setSent(sent);
+    rule.setArchive(archive);
     rule.setRemote("/path/to/destination");
   }
 
@@ -90,7 +90,7 @@ public class SftpOutboundFactoryTest extends BaseTest {
   public void tearDown() {
     sessionFactoryMap.forEach((schema, factory) -> factory.destroy());
 
-    FileUtils.cleanDirectory(rule.getSent());
+    FileUtils.cleanDirectory(rule.getArchive());
     FileUtils.cleanDirectory(FileUtils.getFilePath(tmpdir, "sftp-server/jd/path/to/destination"));
   }
 

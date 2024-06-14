@@ -10,7 +10,7 @@ public class FileGenerationTest {
   @Test
   public void test() {
     String pathname = "C:\\Users\\lenovo\\Desktop\\tmp\\input\\%s.txt";
-    for (int i = 1; i <= 20; i++) {
+    for (int i = 1; i <= 5; i++) {
       final String uuid = UUID.randomUUID().toString();
       FileUtils.writeStringToFile(String.format(pathname, uuid), uuid, StandardCharsets.UTF_8);
     }

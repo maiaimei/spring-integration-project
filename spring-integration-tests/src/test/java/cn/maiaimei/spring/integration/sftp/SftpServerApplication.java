@@ -1,9 +1,9 @@
 package cn.maiaimei.spring.integration.sftp;
 
 import cn.maiaimei.commons.lang.utils.StringUtils;
+import cn.maiaimei.spring.integration.utils.ServerSocketUtils;
 import java.io.File;
 import java.io.IOException;
-import java.net.ServerSocket;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
@@ -117,7 +117,7 @@ public class SftpServerApplication {
     if (StringUtils.hasText(portProperty)) {
       port = Integer.parseInt(portProperty);
     } else {
-      port = getRandomPort();
+      port = ServerSocketUtils.getRandomPort();
     }
     final String homeDirectoryProperty = System.getProperty("homeDirectory");
     if (StringUtils.hasText(homeDirectoryProperty)) {
@@ -137,16 +137,5 @@ public class SftpServerApplication {
     log.info("==================================================");
     properties.forEach((key, value) -> log.info("{} -> {}", key, value));
     log.info("==================================================");
-  }
-
-  private static int getRandomPort() {
-    int randomPort = 0;
-    // ServerSocket构造函数中的参数0指示操作系统自动分配一个随机的可用端口号。
-    try (ServerSocket serverSocket = new ServerSocket(0)) {
-      randomPort = serverSocket.getLocalPort();
-    } catch (IOException e) {
-      log.error(e.getMessage(), e);
-    }
-    return randomPort;
   }
 }

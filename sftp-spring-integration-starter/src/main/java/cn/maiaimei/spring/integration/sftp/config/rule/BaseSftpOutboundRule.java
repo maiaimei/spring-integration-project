@@ -39,7 +39,7 @@ public class BaseSftpOutboundRule {
   /**
    * the files in this folder have been sent to remote host
    */
-  private String sent;
+  private String archive;
   /**
    * whether passes files only one time
    */
