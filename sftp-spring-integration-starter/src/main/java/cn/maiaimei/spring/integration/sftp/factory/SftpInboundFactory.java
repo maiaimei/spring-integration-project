@@ -1,5 +1,7 @@
 package cn.maiaimei.spring.integration.sftp.factory;
 
+import cn.maiaimei.commons.lang.constants.DateTimeConstants;
+import cn.maiaimei.commons.lang.utils.DateTimeUtils;
 import cn.maiaimei.commons.lang.utils.FileUtils;
 import cn.maiaimei.spring.integration.sftp.config.rule.BaseSftpInboundRule;
 import java.io.Closeable;
@@ -11,6 +13,10 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.apache.sshd.sftp.client.SftpClient.DirEntry;
+import org.springframework.expression.EvaluationContext;
+import org.springframework.expression.Expression;
+import org.springframework.expression.spel.standard.SpelExpressionParser;
+import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.integration.StaticMessageHeaderAccessor;
 import org.springframework.integration.core.MessageSource;
 import org.springframework.integration.dsl.IntegrationFlow;
@@ -42,15 +48,23 @@ public class SftpInboundFactory extends BaseSftpFactory {
    * @return a {@link IntegrationFlow} instance
    */
   public IntegrationFlow createSimpleSftpInboundFlow(BaseSftpInboundRule rule) {
-    final AtomicInteger counter = new AtomicInteger();
     validateRule(rule);
+    log.info("Init sftp inbound rule named {}, id: {}", rule.getName(), rule.getId());
+    final AtomicInteger counter = new AtomicInteger();
     String sourceFileExpression = String.format("'%s/' + headers['file_remoteFile']",
         rule.getRemoteSource());
     String tempFileExpression = String.format("'%s/' + headers['file_remoteFile']",
         rule.getRemoteTemp());
-    String archiveFileExpression = String.format(
-        "'%s/' + headers['now'] + headers['file_remoteFile']",
-        rule.getRemoteArchive());
+    String archiveFileExpression;
+    if (rule.isArchiveByDate()) {
+      archiveFileExpression = String.format(
+          "'%s/' + headers['now'] + '/' + headers['file_remoteFile']",
+          rule.getRemoteArchive());
+    } else {
+      archiveFileExpression = String.format(
+          "'%s/' + headers['file_remoteFile']",
+          rule.getRemoteArchive());
+    }
     return IntegrationFlow.from(sftpStreamingMessageSource(rule),
             e -> e.poller(p -> p.cron(rule.getCron())
                 .maxMessagesPerPoll(rule.getMaxMessagesPerPoll())
@@ -71,34 +85,36 @@ public class SftpInboundFactory extends BaseSftpFactory {
             ))
         .handle(closeSession(rule))
         .wireTap(flow -> flow.handle(
-            message -> log.info("[{}] File {} is detected in {}",
-                rule.getName(), message.getHeaders().get(FileHeaders.REMOTE_FILE),
-                rule.getRemoteSource())
+            message -> log.info("[{}] File {} is detected in remote folder",
+                rule.getName(), message.getHeaders().get(FileHeaders.REMOTE_FILE))
         ))
         // https://docs.spring.io/spring-integration/reference/sftp/outbound-gateway.html#using-the-mv-command
         .handle(Sftp.outboundGateway(template(rule), Command.MV, sourceFileExpression)
             .renameExpression(tempFileExpression))
         .wireTap(flow -> flow.handle(
-            message -> log.info("[{}] File {} has been moved to temp folder, from {} to {}",
-                rule.getName(), message.getHeaders().get(FileHeaders.REMOTE_FILE),
-                rule.getRemoteSource(), rule.getRemoteTemp())
+            message -> log.info("[{}] File {} has been moved to temp folder",
+                rule.getName(), message.getHeaders().get(FileHeaders.REMOTE_FILE))
         ))
         .handle(Sftp.outboundGateway(template(rule), Command.GET, tempFileExpression)
             .options(Option.STREAM))
         .handle(download(rule, counter))
         .handle(closeSession(rule))
         .wireTap(flow -> flow.handle(
-            message -> log.info("[{}] File {} has been downloaded to {}",
-                rule.getName(), message.getHeaders().get(FileHeaders.REMOTE_FILE),
-                rule.getLocal())
+            message -> log.info("[{}] File {} has been downloaded to local folder",
+                rule.getName(), message.getHeaders().get(FileHeaders.REMOTE_FILE))
         ))
+        .enrichHeaders(h -> {
+          if (rule.isArchiveByDate()) {
+            h.header("now", DateTimeUtils.formatNow(DateTimeConstants.YYYYMMDD));
+          }
+        })
         .handle(Sftp.outboundGateway(template(rule), Command.MV, tempFileExpression)
             .renameExpression(archiveFileExpression))
         .wireTap(flow -> flow.handle(
-            message -> log.info("[{}] File {} has been moved to archive folder, from {} to {}",
-                rule.getName(), message.getHeaders().get(FileHeaders.REMOTE_FILE),
-                rule.getRemoteTemp(), rule.getRemoteArchive())
+            message -> log.info("[{}] File {} has been moved to archive folder",
+                rule.getName(), message.getHeaders().get(FileHeaders.REMOTE_FILE))
         ))
+        .channel("nullChannel")
         .get();
   }
 
@@ -131,16 +147,22 @@ public class SftpInboundFactory extends BaseSftpFactory {
     if (StringUtils.hasText(rule.getRenameExpression())) {
       handler.setFileNameGenerator(
           message -> getFileName(message, rule.getRenameExpression(), counter));
+    } else {
+      handler.setFileNameGenerator(
+          message -> (String) message.getHeaders().get(FileHeaders.REMOTE_FILE));
     }
     handler.setFileExistsMode(FileExistsMode.REPLACE);
     return handler;
   }
 
+  // TODO
   private String getFileName(Message<?> message, String renameExpression, AtomicInteger counter) {
     final Map<String, String> headerMap = message.getHeaders().entrySet().stream()
         .collect(Collectors.toMap(Entry::getKey, e -> String.valueOf(e.getValue())));
-    // TODO
-    return null;
+    final SpelExpressionParser parser = new SpelExpressionParser();
+    final EvaluationContext context = new StandardEvaluationContext();
+    final Expression expression = parser.parseExpression(renameExpression);
+    return expression.getValue(context, String.class);
   }
 
   /**
@@ -196,6 +218,7 @@ public class SftpInboundFactory extends BaseSftpFactory {
     RemoteFileTemplate<DirEntry> template = new RemoteFileTemplate<>(
         sessionFactoryMap.get(rule.getSchema()));
     template.setBeanFactory(applicationContext);
+    template.setAutoCreateDirectory(Boolean.TRUE);
     // must invoke method "afterPropertiesSet", 
     // otherwise will throw java.lang.RuntimeException: No beanFactory
     template.afterPropertiesSet();

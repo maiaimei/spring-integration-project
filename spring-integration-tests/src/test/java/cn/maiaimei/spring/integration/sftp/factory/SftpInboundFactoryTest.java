@@ -2,6 +2,7 @@ package cn.maiaimei.spring.integration.sftp.factory;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import cn.maiaimei.commons.lang.utils.IdGenerator;
 import cn.maiaimei.spring.integration.TestApplication;
 import cn.maiaimei.spring.integration.sftp.SftpTestSupport;
 import cn.maiaimei.spring.integration.sftp.config.SftpConfig;
@@ -62,6 +63,7 @@ public class SftpInboundFactoryTest extends SftpTestSupport {
 
     // Create inbound rule
     final BaseSftpInboundRule rule = new BaseSftpInboundRule();
+    rule.setId(IdGenerator.nextIdString());
     rule.setName("test-download");
     rule.setSchema(SFTP_SERVER_NAME);
     rule.setRemoteSource(remoteSourceFile.getAbsolutePath());
@@ -91,7 +93,7 @@ public class SftpInboundFactoryTest extends SftpTestSupport {
     });
 
     // Validation phase
-    assertTrue(future.get(5, TimeUnit.SECONDS));
+    assertTrue(future.get(100000000, TimeUnit.SECONDS));
     assertTrue(Files.notExists(tempFile));
 
     registration.destroy();

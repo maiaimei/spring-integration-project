@@ -53,6 +53,7 @@ public abstract class FileTestSupport {
       remoteTemporaryFolder = new File(
           temporaryFolder.toFile().getAbsolutePath() + File.separator + "remote");
       remoteTemporaryFolder.mkdirs();
+      log.info("remote temporary folder: {}", remoteTemporaryFolder.getAbsolutePath());
     } else {
       recursiveDelete(remoteTemporaryFolder, info);
     }
@@ -63,6 +64,7 @@ public abstract class FileTestSupport {
       localTemporaryFolder = new File(
           temporaryFolder.toFile().getAbsolutePath() + File.separator + "local");
       localTemporaryFolder.mkdirs();
+      log.info("local temporary folder: {}", localTemporaryFolder.getAbsolutePath());
     } else {
       recursiveDelete(localTemporaryFolder, info);
     }
