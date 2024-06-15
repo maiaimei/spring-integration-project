@@ -3,9 +3,11 @@ package cn.maiaimei.spring.integration.utils;
 import java.io.IOException;
 import java.net.ServerSocket;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 @Slf4j
-public class ServerSocketUtils {
+public class ServerSocketTest {
 
   public static int getRandomPort() {
     int randomPort = 0;
@@ -17,4 +19,12 @@ public class ServerSocketUtils {
     }
     return randomPort;
   }
+
+  @Test
+  public void testGetRandomPort() {
+    final int randomPort = ServerSocketTest.getRandomPort();
+    log.info("random port：{}", randomPort);
+    Assertions.assertTrue(randomPort > 0);
+  }
+
 }

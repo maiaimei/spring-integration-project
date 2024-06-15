@@ -16,4 +16,5 @@ public class SftpConnection {
   private String proxyPort;
   private int poolSize;
   private long waitTimeout;
+  private boolean testSession;
 }

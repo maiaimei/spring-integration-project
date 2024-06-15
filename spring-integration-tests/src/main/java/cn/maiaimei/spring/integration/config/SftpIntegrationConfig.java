@@ -4,7 +4,6 @@ import cn.maiaimei.commons.lang.utils.FileUtils;
 import java.io.File;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.integration.annotation.InboundChannelAdapter;
 import org.springframework.integration.annotation.Poller;
 import org.springframework.integration.annotation.ServiceActivator;
@@ -22,7 +21,7 @@ import org.springframework.messaging.MessageHandler;
 import org.springframework.messaging.support.ChannelInterceptor;
 
 @Slf4j
-@Configuration
+//@Configuration
 public class SftpIntegrationConfig {
 
   @Bean

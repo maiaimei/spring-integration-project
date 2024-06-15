@@ -45,6 +45,10 @@ public class BaseSftpInboundRule {
    */
   private String local;
   /**
+   * Specify a SpEL expression for files renaming during download.
+   */
+  private String renameExpression;
+  /**
    * whether passes files only one time
    */
   private boolean acceptOnce = false;

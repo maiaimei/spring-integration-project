@@ -1,7 +1,7 @@
 package cn.maiaimei.spring.integration.sftp;
 
 import cn.maiaimei.commons.lang.utils.StringUtils;
-import cn.maiaimei.spring.integration.utils.ServerSocketUtils;
+import cn.maiaimei.spring.integration.utils.ServerSocketTest;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -117,7 +117,7 @@ public class SftpServerApplication {
     if (StringUtils.hasText(portProperty)) {
       port = Integer.parseInt(portProperty);
     } else {
-      port = ServerSocketUtils.getRandomPort();
+      port = ServerSocketTest.getRandomPort();
     }
     final String homeDirectoryProperty = System.getProperty("homeDirectory");
     if (StringUtils.hasText(homeDirectoryProperty)) {
