@@ -24,6 +24,7 @@ import org.springframework.integration.handler.AbstractReplyProducingMessageHand
 import org.springframework.integration.sftp.dsl.Sftp;
 import org.springframework.integration.sftp.filters.SftpSimplePatternFileListFilter;
 import org.springframework.integration.sftp.inbound.SftpStreamingMessageSource;
+import org.springframework.integration.support.MessagingExceptionWrapper;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageHandler;
 import org.springframework.util.Assert;
@@ -54,31 +55,48 @@ public class SftpInboundFactory extends BaseSftpFactory {
             e -> e.poller(p -> p.cron(rule.getCron())
                 .maxMessagesPerPoll(rule.getMaxMessagesPerPoll())
                 .errorHandler(
-                    t -> log.error(String.format("[%s] Error occurs in fetching file, message: %s",
-                        rule.getName(), t.getMessage()), t))))
+                    t -> {
+                      if (MessagingExceptionWrapper.class.isAssignableFrom(t.getClass())) {
+                        final MessagingExceptionWrapper wrapper =
+                            (MessagingExceptionWrapper) t;
+                        final Throwable cause = wrapper.getCause();
+                        log.error(String.format("[%s] Error occurs in fetching file, message: %s",
+                            rule.getName(), cause.getMessage()), cause);
+                        closeSession(rule, wrapper.getFailedMessage());
+                      } else {
+                        log.error(String.format("[%s] Error occurs in fetching file, message: %s",
+                            rule.getName(), t.getMessage()), t);
+                      }
+                    })
+            ))
+        .handle(closeSession(rule))
         .wireTap(flow -> flow.handle(
             message -> log.info("[{}] File {} is detected in {}",
-                rule.getName(), message.getHeaders().get(FileHeaders.FILENAME),
+                rule.getName(), message.getHeaders().get(FileHeaders.REMOTE_FILE),
                 rule.getRemoteSource())
         ))
-        .handle(closeSession(rule))
         // https://docs.spring.io/spring-integration/reference/sftp/outbound-gateway.html#using-the-mv-command
         .handle(Sftp.outboundGateway(template(rule), Command.MV, sourceFileExpression)
             .renameExpression(tempFileExpression))
         .wireTap(flow -> flow.handle(
             message -> log.info("[{}] File {} has been moved to temp folder, from {} to {}",
-                rule.getName(), message.getHeaders().get(FileHeaders.FILENAME),
+                rule.getName(), message.getHeaders().get(FileHeaders.REMOTE_FILE),
                 rule.getRemoteSource(), rule.getRemoteTemp())
         ))
         .handle(Sftp.outboundGateway(template(rule), Command.GET, tempFileExpression)
             .options(Option.STREAM))
         .handle(download(rule, counter))
         .handle(closeSession(rule))
+        .wireTap(flow -> flow.handle(
+            message -> log.info("[{}] File {} has been downloaded to {}",
+                rule.getName(), message.getHeaders().get(FileHeaders.REMOTE_FILE),
+                rule.getLocal())
+        ))
         .handle(Sftp.outboundGateway(template(rule), Command.MV, tempFileExpression)
             .renameExpression(archiveFileExpression))
         .wireTap(flow -> flow.handle(
             message -> log.info("[{}] File {} has been moved to archive folder, from {} to {}",
-                rule.getName(), message.getHeaders().get(FileHeaders.FILENAME),
+                rule.getName(), message.getHeaders().get(FileHeaders.REMOTE_FILE),
                 rule.getRemoteTemp(), rule.getRemoteArchive())
         ))
         .get();
@@ -131,27 +149,41 @@ public class SftpInboundFactory extends BaseSftpFactory {
    * <p>
    * refer to https://docs.spring.io/spring-integration/reference/sftp/streaming.html
    *
+   * @param rule the rule to use
    * @return an {@link AbstractReplyProducingMessageHandler} instance
    */
   private AbstractReplyProducingMessageHandler closeSession(BaseSftpInboundRule rule) {
     return new AbstractReplyProducingMessageHandler() {
       @Override
       protected Object handleRequestMessage(Message<?> requestMessage) {
-        if (Objects.nonNull(requestMessage)) {
-          final Closeable resource = StaticMessageHeaderAccessor.getCloseableResource(
-              requestMessage);
-          if (Objects.nonNull(resource)) {
-            try {
-              resource.close();
-            } catch (IOException e) {
-              log.error(String.format("[%s] Error occurs in closing session, message: %s",
-                  rule.getName(), e.getMessage()), e);
-            }
-          }
-        }
+        closeSession(rule, requestMessage);
         return requestMessage;
       }
     };
+  }
+
+  /**
+   * When consuming remote files as streams, you are responsible for closing the Session after the
+   * stream is consumed.
+   * <p>
+   * refer to https://docs.spring.io/spring-integration/reference/sftp/streaming.html
+   *
+   * @param rule the rule to use
+   * @return an {@link AbstractReplyProducingMessageHandler} instance
+   */
+  private void closeSession(BaseSftpInboundRule rule, Message<?> requestMessage) {
+    if (Objects.nonNull(requestMessage)) {
+      final Closeable resource = StaticMessageHeaderAccessor.getCloseableResource(
+          requestMessage);
+      if (Objects.nonNull(resource)) {
+        try {
+          resource.close();
+        } catch (IOException e) {
+          log.error(String.format("[%s] Error occurs in closing session, message: %s",
+              rule.getName(), e.getMessage()), e);
+        }
+      }
+    }
   }
 
   /**

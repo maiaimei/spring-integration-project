@@ -9,10 +9,10 @@ import cn.maiaimei.spring.integration.sftp.config.SftpConnection;
 import cn.maiaimei.spring.integration.sftp.config.SftpConnectionHolder;
 import cn.maiaimei.spring.integration.sftp.config.rule.BaseSftpInboundRule;
 import com.google.common.collect.Maps;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
@@ -54,24 +54,36 @@ public class SftpInboundFactoryTest extends SftpTestSupport {
   @Test
   public void testCreateSimpleSftpInboundFlow()
       throws ExecutionException, InterruptedException, TimeoutException, IOException {
+    // Create folder for test
+    final File remoteSourceFile = createRemoteFolder("source");
+    final File remoteTempFile = createRemoteFolder("temp");
+    final File remoteArchiveFile = createRemoteFolder("archive");
+    final File localFile = createLocalFolder("input");
+
+    // Create inbound rule
     final BaseSftpInboundRule rule = new BaseSftpInboundRule();
-    rule.setName("test-sftp-download");
-    rule.setSchema("foo");
-    rule.setRemoteSource("/path/to/source");
-    rule.setRemoteTemp("/path/to/temp");
-    rule.setRemoteArchive("/path/to/archive");
-    rule.setLocal(targetLocalDirectory.getAbsolutePath());
+    rule.setName("test-download");
+    rule.setSchema(SFTP_SERVER_NAME);
+    rule.setRemoteSource(remoteSourceFile.getAbsolutePath());
+    rule.setRemoteTemp(remoteTempFile.getAbsolutePath());
+    rule.setRemoteArchive(remoteArchiveFile.getAbsolutePath());
+    rule.setLocal(localFile.getAbsolutePath());
     rule.setPattern("*.xxx");
+
+    // Register integration flow
     final IntegrationFlow flow = sftpInboundFactory.createSimpleSftpInboundFlow(rule);
     IntegrationFlowRegistration registration = this.flowContext.registration(flow).register();
 
     // Prepare phase
-    Path tempFile = Files.createTempFile(getRemoteTempFolder().toPath(), "TEST_DOWNLOAD_", ".xxx");
+    Path tempFile = Files.createTempFile(remoteSourceFile.toPath(), "TEST_DOWNLOAD_",
+        ".xxx");
 
-    // Run async task to wait for expected files to be downloaded to a file
-    // system from a remote SFTP server
+    assertTrue(Files.exists(tempFile));
+
+    // Run async task to wait for expected files to be downloaded 
+    // to a file system from a remote SFTP server
     Future<Boolean> future = Executors.newSingleThreadExecutor().submit(() -> {
-      Path expectedFile = Paths.get(getTargetLocalDirectoryName()).resolve(tempFile.getFileName());
+      Path expectedFile = localFile.toPath().resolve(tempFile.getFileName());
       while (!Files.exists(expectedFile)) {
         TimeUnit.MILLISECONDS.sleep(200);
       }
@@ -79,7 +91,7 @@ public class SftpInboundFactoryTest extends SftpTestSupport {
     });
 
     // Validation phase
-    assertTrue(future.get(10, TimeUnit.SECONDS));
+    assertTrue(future.get(5, TimeUnit.SECONDS));
     assertTrue(Files.notExists(tempFile));
 
     registration.destroy();
@@ -96,14 +108,14 @@ public class SftpInboundFactoryTest extends SftpTestSupport {
     @Primary
     public SftpConnectionHolder sftpConnectionHolder() {
       final SftpConnection connection = new SftpConnection();
-      connection.setHost("localhost");
-      connection.setPort(port);
-      connection.setUser("foo");
-      connection.setPassword("foo");
+      connection.setHost(SFTP_SERVER_HOST);
+      connection.setPort(SFTP_SERVER_PORT);
+      connection.setUser(SFTP_SERVER_USER);
+      connection.setPassword(SFTP_SERVER_PASSWORD);
 
       final SftpConnectionHolder holder = new SftpConnectionHolder();
       holder.setConnections(Maps.newHashMap());
-      holder.getConnections().put("foo", connection);
+      holder.getConnections().put(SFTP_SERVER_NAME, connection);
       return holder;
     }
 
