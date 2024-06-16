@@ -1,6 +1,7 @@
 package cn.maiaimei.spring.integration.sftp.config.rule;
 
 import lombok.Data;
+import org.springframework.integration.scheduling.PollerMetadata;
 
 /**
  * BaseSftpInboundRule
@@ -27,11 +28,12 @@ public class BaseSftpInboundRule {
   /**
    * max messages per poll
    */
-  private long maxMessagesPerPoll = 100;
+  private long maxMessagesPerPoll = PollerMetadata.MAX_MESSAGES_UNBOUNDED;
   /**
-   * the files match this pattern will send to remote host
+   * Set the maximum number of objects the source should fetch if it is necessary to fetch objects.
+   * Setting the maxFetchSize to 0 disables remote fetching, a negative value indicates no limit.
    */
-  private String pattern;
+  private int maxFetchSize = Integer.MIN_VALUE;
   /**
    * the source path to download files on remote host
    */
@@ -45,16 +47,19 @@ public class BaseSftpInboundRule {
    */
   private String remoteArchive;
   /**
+   * whether archive files by date
+   */
+  private boolean archiveByDate;
+  /**
    * the path of downloaded files on local host
    */
   private String local;
   /**
+   * the files match this pattern will send to remote host
+   */
+  private String pattern;
+  /**
    * Specify a SpEL expression for files renaming during download.
    */
   private String renameExpression;
-  /**
-   * whether passes files only one time
-   */
-  private boolean acceptOnce;
-  private boolean archiveByDate;
 }

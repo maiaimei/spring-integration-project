@@ -3,6 +3,8 @@ package cn.maiaimei.spring.integration.sftp.factory;
 import cn.maiaimei.commons.lang.constants.DateTimeConstants;
 import cn.maiaimei.commons.lang.utils.DateTimeUtils;
 import cn.maiaimei.commons.lang.utils.FileUtils;
+import cn.maiaimei.commons.lang.utils.StringUtils;
+import cn.maiaimei.commons.lang.utils.ValueExpressionUtils;
 import cn.maiaimei.spring.integration.sftp.config.rule.BaseSftpInboundRule;
 import java.io.Closeable;
 import java.io.IOException;
@@ -13,10 +15,6 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.apache.sshd.sftp.client.SftpClient.DirEntry;
-import org.springframework.expression.EvaluationContext;
-import org.springframework.expression.Expression;
-import org.springframework.expression.spel.standard.SpelExpressionParser;
-import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.integration.StaticMessageHeaderAccessor;
 import org.springframework.integration.core.MessageSource;
 import org.springframework.integration.dsl.IntegrationFlow;
@@ -34,7 +32,6 @@ import org.springframework.integration.support.MessagingExceptionWrapper;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageHandler;
 import org.springframework.util.Assert;
-import org.springframework.util.StringUtils;
 
 /**
  * SftpInboundFactory
@@ -137,32 +134,43 @@ public class SftpInboundFactory extends BaseSftpFactory {
     SftpStreamingMessageSource messageSource = new SftpStreamingMessageSource(template(rule));
     messageSource.setRemoteDirectory(rule.getRemoteSource());
     messageSource.setFilter(new SftpSimplePatternFileListFilter(rule.getPattern()));
-    messageSource.setMaxFetchSize(10);
+    messageSource.setMaxFetchSize(rule.getMaxFetchSize());
     return messageSource;
   }
 
+  /**
+   * Download file
+   *
+   * @param rule the rule to use
+   * @return an {@link MessageHandler} instance
+   */
   private MessageHandler download(BaseSftpInboundRule rule, AtomicInteger counter) {
     final FileWritingMessageHandler handler = new FileWritingMessageHandler(
         FileUtils.getOrCreateDirectory(rule.getLocal()));
-    if (StringUtils.hasText(rule.getRenameExpression())) {
-      handler.setFileNameGenerator(
-          message -> getFileName(message, rule.getRenameExpression(), counter));
-    } else {
-      handler.setFileNameGenerator(
-          message -> (String) message.getHeaders().get(FileHeaders.REMOTE_FILE));
-    }
+    handler.setFileNameGenerator(
+        message -> getDownloadFileName(message, rule.getRenameExpression(), counter));
     handler.setFileExistsMode(FileExistsMode.REPLACE);
     return handler;
   }
 
-  // TODO
-  private String getFileName(Message<?> message, String renameExpression, AtomicInteger counter) {
-    final Map<String, String> headerMap = message.getHeaders().entrySet().stream()
-        .collect(Collectors.toMap(Entry::getKey, e -> String.valueOf(e.getValue())));
-    final SpelExpressionParser parser = new SpelExpressionParser();
-    final EvaluationContext context = new StandardEvaluationContext();
-    final Expression expression = parser.parseExpression(renameExpression);
-    return expression.getValue(context, String.class);
+
+  /**
+   * get download filename
+   *
+   * @param message          the message to use
+   * @param renameExpression the renameExpression to use
+   * @param counter          the counter to use
+   * @return download filename
+   */
+  private String getDownloadFileName(Message<?> message, String renameExpression,
+      AtomicInteger counter) {
+    if (StringUtils.hasText(renameExpression)) {
+      final Map<String, String> headerMap = message.getHeaders().entrySet().stream()
+          .collect(Collectors.toMap(Entry::getKey, e -> String.valueOf(e.getValue())));
+      return ValueExpressionUtils.parse(renameExpression, headerMap, counter);
+    } else {
+      return (String) message.getHeaders().get(FileHeaders.REMOTE_FILE);
+    }
   }
 
   /**
@@ -191,7 +199,6 @@ public class SftpInboundFactory extends BaseSftpFactory {
    * refer to https://docs.spring.io/spring-integration/reference/sftp/streaming.html
    *
    * @param rule the rule to use
-   * @return an {@link AbstractReplyProducingMessageHandler} instance
    */
   private void closeSession(BaseSftpInboundRule rule, Message<?> requestMessage) {
     if (Objects.nonNull(requestMessage)) {
@@ -231,12 +238,13 @@ public class SftpInboundFactory extends BaseSftpFactory {
    * @param rule the rule to validate
    */
   private void validateRule(BaseSftpInboundRule rule) {
-    Assert.hasText(rule.getSchema(), "schema must be configured");
+    Assert.hasText(rule.getId(), "id must be configured");
     Assert.hasText(rule.getName(), "name must be configured");
+    Assert.hasText(rule.getSchema(), "schema must be configured");
     Assert.hasText(rule.getPattern(), "pattern must be configured");
     Assert.hasText(rule.getLocal(), "local must be configured");
     Assert.hasText(rule.getRemoteSource(), "remoteSource must be configured");
-    Assert.hasText(rule.getRemoteTemp(), "remoteSource must be configured");
+    Assert.hasText(rule.getRemoteTemp(), "remoteTemp must be configured");
     Assert.hasText(rule.getRemoteArchive(), "remoteArchive must be configured");
   }
 }

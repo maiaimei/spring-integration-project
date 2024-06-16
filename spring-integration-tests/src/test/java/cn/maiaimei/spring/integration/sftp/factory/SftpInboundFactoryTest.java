@@ -70,7 +70,9 @@ public class SftpInboundFactoryTest extends SftpTestSupport {
     rule.setRemoteTemp(remoteTempFile.getAbsolutePath());
     rule.setRemoteArchive(remoteArchiveFile.getAbsolutePath());
     rule.setLocal(localFile.getAbsolutePath());
-    rule.setPattern("*.xxx");
+    rule.setPattern("*.txt");
+//    rule.setRenameExpression(
+//        "test-in_${currentTimestamp->yyyyMMddHHmmssSSS}${serialNumber->%05d}.txt");
 
     // Register integration flow
     final IntegrationFlow flow = sftpInboundFactory.createSimpleSftpInboundFlow(rule);
@@ -78,7 +80,7 @@ public class SftpInboundFactoryTest extends SftpTestSupport {
 
     // Prepare phase
     Path tempFile = Files.createTempFile(remoteSourceFile.toPath(), "TEST_DOWNLOAD_",
-        ".xxx");
+        ".txt");
 
     assertTrue(Files.exists(tempFile));
 
@@ -93,7 +95,7 @@ public class SftpInboundFactoryTest extends SftpTestSupport {
     });
 
     // Validation phase
-    assertTrue(future.get(100000000, TimeUnit.SECONDS));
+    assertTrue(future.get(10, TimeUnit.SECONDS));
     assertTrue(Files.notExists(tempFile));
 
     registration.destroy();
