@@ -1,9 +1,0 @@
-# 单元测试环境
-
-sftp:
-  connections:
-    df:
-      host: localhost
-      port: 57261
-      user: user
-      password: password

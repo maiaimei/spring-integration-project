@@ -18,6 +18,9 @@ sftp:
       privateKeyPassphrase: password
   # inbound config
   inbound:
+    retry:
+      maxAttempts: 4
+      maxWaitTime: 300000
     connections:
       in:
         host: 127.0.0.1
@@ -29,7 +32,7 @@ sftp:
   outbound:
     retry:
       maxAttempts: 4
-      waitTime: 300000
+      maxWaitTime: 300000
     connections:
       ot:
         host: 127.0.0.1

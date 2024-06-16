@@ -30,8 +30,8 @@ public class BaseSftpInboundRule {
    */
   private long maxMessagesPerPoll = PollerMetadata.MAX_MESSAGES_UNBOUNDED;
   /**
-   * Set the maximum number of objects the source should fetch if it is necessary to fetch objects.
-   * Setting the maxFetchSize to 0 disables remote fetching, a negative value indicates no limit.
+   * Set the maximum number of objects the source should fetch if it is necessary to fetch objects. Setting the maxFetchSize to 0
+   * disables remote fetching, a negative value indicates no limit.
    */
   private int maxFetchSize = Integer.MIN_VALUE;
   /**
@@ -62,4 +62,16 @@ public class BaseSftpInboundRule {
    * Specify a SpEL expression for files renaming during download.
    */
   private String renameExpression;
+  /**
+   * the maximum number of retry attempts including the initial attempt
+   * <p>
+   * includes the initial attempt before the retries begin so, generally, will be {@code >= 1}.
+   * <p>
+   * for example setting this property to 3 means 3 attempts total (initial + 2 retries).
+   */
+  private int retryMaxAttempts;
+  /**
+   * maximum retry wait time in milliseconds. Cannot be &lt; 1. Default value is 1000ms.
+   */
+  private long retryMaxWaitTime;
 }

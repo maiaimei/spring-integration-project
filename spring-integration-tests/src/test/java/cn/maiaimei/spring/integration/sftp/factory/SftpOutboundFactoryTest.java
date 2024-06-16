@@ -77,6 +77,8 @@ public class SftpOutboundFactoryTest extends SftpTestSupport {
     rule.setLocal(localFile.getAbsolutePath());
     rule.setArchive(archive);
     rule.setRemote(remoteDestinationFile.getAbsolutePath());
+    rule.setRetryMaxAttempts(4);
+    rule.setRetryMaxWaitTime(1000);
   }
 
   @Override
@@ -106,8 +108,8 @@ public class SftpOutboundFactoryTest extends SftpTestSupport {
   @Test
   public void testAdvancedSftpOutbound() throws ExecutionException, InterruptedException, TimeoutException {
     rule.setSchema("unknown-sftp");
-    rule.setMaxRetries(4);
-    rule.setMaxRetryWaitTime(1000);
+    rule.setRetryMaxAttempts(4);
+    rule.setRetryMaxWaitTime(1000);
     IntegrationFlow flow = sftpOutboundFactory.createAdvancedSftpOutboundFlow(rule);
     registration = flowContext.registration(flow).register();
 

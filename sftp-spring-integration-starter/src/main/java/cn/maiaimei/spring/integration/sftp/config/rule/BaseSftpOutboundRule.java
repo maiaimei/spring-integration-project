@@ -55,9 +55,9 @@ public class BaseSftpOutboundRule {
    * <p>
    * for example setting this property to 3 means 3 attempts total (initial + 2 retries).
    */
-  private int maxRetries;
+  private int retryMaxAttempts;
   /**
    * maximum retry wait time in milliseconds. Cannot be &lt; 1. Default value is 1000ms.
    */
-  private long maxRetryWaitTime;
+  private long retryMaxWaitTime;
 }

@@ -76,6 +76,8 @@ public class SftpInboundFactoryTest extends SftpTestSupport {
     rule.setPattern("*.txt");
 //    rule.setRenameExpression(
 //        "test-in_${currentTimestamp->yyyyMMddHHmmssSSS}${serialNumber->%05d}.txt");
+    rule.setRetryMaxAttempts(4);
+    rule.setRetryMaxWaitTime(1000);
 
     // Register integration flow
     final IntegrationFlow flow = sftpInboundFactory.createSimpleSftpInboundFlow(rule);
