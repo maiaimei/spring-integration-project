@@ -9,13 +9,17 @@ import lombok.Data;
 public class BaseSftpOutboundRule {
 
   /**
-   * the schema for SFTP connection
+   * the rule id
    */
-  private String schema;
+  private String id;
   /**
    * the rule name
    */
   private String name;
+  /**
+   * the schema for SFTP connection
+   */
+  private String schema;
   /**
    * the cron expression
    */

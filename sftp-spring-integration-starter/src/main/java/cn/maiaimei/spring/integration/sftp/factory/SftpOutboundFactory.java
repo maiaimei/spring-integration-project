@@ -45,17 +45,12 @@ public class SftpOutboundFactory extends BaseSftpFactory {
    */
   public IntegrationFlow createSimpleSftpOutboundFlow(SimpleSftpOutboundRule rule) {
     validateRule(rule);
+    log.info("Init sftp outbound rule named {}, id: {}", rule.getName(), rule.getId());
     return IntegrationFlow.from(fileReadingMessageSource(rule),
             e -> e.poller(p -> p.cron(rule.getCron()).maxMessagesPerPoll(rule.getMaxMessagesPerPoll())))
-        .wireTap(flow -> flow.handle(
-            message -> log.info("[{}] File {} is detected in {}",
-                rule.getName(), message.getHeaders().get(FileHeaders.FILENAME), rule.getLocal())
-        ))
+        .wireTap(info("[{}] File {} is detected in local folder", rule))
         .handle(Sftp.outboundGateway(template(rule), Command.PUT, SftpConstants.PAYLOAD))
-        .wireTap(flow -> flow.handle(
-            message -> log.info("[{}] File {} has been uploaded to {}",
-                rule.getName(), message.getHeaders().get(FileHeaders.FILENAME), rule.getRemote())
-        ))
+        .wireTap(info("[{}] File {} has been uploaded to remote folder", rule))
         .handle(moveToSent(rule))
         .get();
   }
@@ -68,14 +63,11 @@ public class SftpOutboundFactory extends BaseSftpFactory {
    */
   public IntegrationFlow createAdvancedSftpOutboundFlow(SimpleSftpOutboundRule rule) {
     validateRule(rule);
+    log.info("Init sftp outbound rule named {}, id: {}", rule.getName(), rule.getId());
     return IntegrationFlow.from(fileReadingMessageSource(rule),
             e -> e.poller(p -> p.cron(rule.getCron()).maxMessagesPerPoll(rule.getMaxMessagesPerPoll())))
-        .wireTap(flow -> flow.handle(
-            message -> log.info("[{}] File {} is detected in {}",
-                rule.getName(), message.getHeaders().get(FileHeaders.FILENAME), rule.getLocal())
-        ))
-        .handle(new SftpOutboundGateway(template(rule), Command.PUT.getCommand(),
-                SftpConstants.PAYLOAD),
+        .wireTap(info("[{}] File {} is detected in local folder", rule))
+        .handle(new SftpOutboundGateway(template(rule), Command.PUT.getCommand(), SftpConstants.PAYLOAD),
             e -> e.advice(sftpOutboundGatewayAdvice(rule)))
         .handle(moveToSent(rule))
         .get();
@@ -154,13 +146,21 @@ public class SftpOutboundFactory extends BaseSftpFactory {
    * @param rule the rule to validate
    */
   private void validateRule(BaseSftpOutboundRule rule) {
-    Assert.hasText(rule.getSchema(), "schema must be configured");
+    Assert.hasText(rule.getId(), "id must be configured");
     Assert.hasText(rule.getName(), "name must be configured");
+    Assert.hasText(rule.getSchema(), "schema must be configured");
     Assert.hasText(rule.getPattern(), "pattern must be configured");
     Assert.hasText(rule.getLocal(), "local must be configured");
     Assert.hasText(rule.getRemote(), "remote must be configured");
     Assert.hasText(rule.getArchive(), "archive must be configured");
   }
+
+  private IntegrationFlow info(String format, BaseSftpOutboundRule rule) {
+    return flow -> flow.handle(
+        message -> log.info(format, rule.getName(), message.getHeaders().get(FileHeaders.FILENAME))
+    );
+  }
+
 
   /**
    * Construct a {@link Advice} instance by the given rule.
