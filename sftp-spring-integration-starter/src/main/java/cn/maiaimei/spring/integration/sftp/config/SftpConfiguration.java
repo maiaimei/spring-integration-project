@@ -21,7 +21,7 @@ import org.springframework.util.StringUtils;
  * SFTP configuration
  */
 @Configuration
-public class SftpConfig {
+public class SftpConfiguration {
 
   @Bean
   @ConfigurationProperties(prefix = "sftp")

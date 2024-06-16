@@ -33,7 +33,7 @@ public class SftpServerApplication {
   private static volatile boolean running;
 
   /**
-   * -Dport=54662 -DhomeDirectory=jd -Djava.io.tmpdir="C:\Users\lenovo\Desktop\tmp\sftp-server"
+   * -Dport=54662 -DhomeDirectory=in -Djava.io.tmpdir="C:\Users\lenovo\Desktop\tmp\sftp-server"
    */
   public static void main(String[] args) throws Exception {
     start();
@@ -106,9 +106,9 @@ public class SftpServerApplication {
   private static void initSessionFactory() {
     sessionFactory = new DefaultSftpSessionFactory();
     sessionFactory.setHost("127.0.0.1");
-    sessionFactory.setUser("user");
+    sessionFactory.setUser("foo");
     sessionFactory.setPrivateKey(new ClassPathResource("META-INF/keys/sftp_rsa"));
-    sessionFactory.setPrivateKeyPassphrase("password");
+    sessionFactory.setPrivateKeyPassphrase("foo");
     sessionFactory.setAllowUnknownKeys(Boolean.TRUE);
   }
 

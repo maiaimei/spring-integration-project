@@ -128,7 +128,6 @@ public class SftpInboundFactory extends BaseSftpFactory {
     SftpStreamingMessageSource messageSource = new SftpStreamingMessageSource(template(rule));
     messageSource.setRemoteDirectory(rule.getRemoteSource());
     messageSource.setFilter(new SftpSimplePatternFileListFilter(rule.getPattern()));
-    messageSource.setMaxFetchSize(rule.getMaxFetchSize());
     return messageSource;
   }
 
@@ -302,7 +301,8 @@ public class SftpInboundFactory extends BaseSftpFactory {
     advice.setRetryMaxAttempts(rule.getRetryMaxAttempts(), RETRY_MAX_ATTEMPTS);
     advice.setRetryMaxWaitTime(rule.getRetryMaxWaitTime(), RETRY_MAX_WAIT_TIME);
     advice.setFileNameFunction(message -> (String) message.getHeaders().get(FileHeaders.REMOTE_FILE));
-    advice.setLogDescription("download to local folder");
+    advice.setAction("convert to stream");
+    advice.setActionCompleted("converted to stream");
     advice.afterPropertiesSet();
     return advice;
   }

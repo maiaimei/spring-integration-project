@@ -6,7 +6,7 @@ import cn.maiaimei.commons.lang.constants.NumberConstants;
 import cn.maiaimei.commons.lang.utils.IdGenerator;
 import cn.maiaimei.spring.integration.TestApplication;
 import cn.maiaimei.spring.integration.sftp.SftpTestSupport;
-import cn.maiaimei.spring.integration.sftp.config.SftpConfig;
+import cn.maiaimei.spring.integration.sftp.config.SftpConfiguration;
 import cn.maiaimei.spring.integration.sftp.config.SftpConnection;
 import cn.maiaimei.spring.integration.sftp.config.SftpConnectionHolder;
 import cn.maiaimei.spring.integration.sftp.config.rule.SimpleSftpOutboundRule;
@@ -128,7 +128,7 @@ public class SftpOutboundFactoryTest extends SftpTestSupport {
 
   @Import({
       TestApplication.class,
-      SftpConfig.class
+      SftpConfiguration.class
   })
   @TestConfiguration
   public static class ContextConfig {

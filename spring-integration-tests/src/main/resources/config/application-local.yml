@@ -13,9 +13,9 @@ sftp:
     df:
       host: 127.0.0.1
       port: 54661
-      user: user
+      user: foo
       privateKey: classpath:/META-INF/keys/sftp_rsa
-      privateKeyPassphrase: password
+      privateKeyPassphrase: foo
   # inbound config
   inbound:
     retry:
@@ -25,9 +25,21 @@ sftp:
       in:
         host: 127.0.0.1
         port: 54662
-        user: user
+        user: foo
         privateKey: classpath:/META-INF/keys/sftp_rsa
-        privateKeyPassphrase: password
+        privateKeyPassphrase: foo
+    rules:
+      - id: 123456
+        name: test-inbound
+        schema: in
+        remoteSource: /path/to/source
+        remoteTemp: /path/to/temp
+        remoteArchive: /path/to/archive
+        archiveByDate: true
+        pattern: "*.txt"
+        local: C:\Users\lenovo\Desktop\tmp\input
+        retryMaxAttempts: 4
+        retryMaxWaitTime: 3000
   # outbound config
   outbound:
     retry:
@@ -37,18 +49,18 @@ sftp:
       ot:
         host: 127.0.0.1
         port: 54663
-        user: user
+        user: foo
         privateKey: classpath:/META-INF/keys/sftp_rsa
-        privateKeyPassphrase: password
+        privateKeyPassphrase: foo
       ot-unknown-host:
         host: 888.888.888.888
         port: 54663
-        user: user
+        user: foo
         privateKey: classpath:/META-INF/keys/sftp_rsa
-        privateKeyPassphrase: password
+        privateKeyPassphrase: foo
       ot-unknown-port:
         host: 127.0.0.1
         port: 12345
-        user: user
+        user: foo
         privateKey: classpath:/META-INF/keys/sftp_rsa
-        privateKeyPassphrase: password
+        privateKeyPassphrase: foo

@@ -169,7 +169,8 @@ public class SftpOutboundFactory extends BaseSftpFactory {
     advice.setRetryMaxAttempts(rule.getRetryMaxAttempts(), RETRY_MAX_ATTEMPTS);
     advice.setRetryMaxWaitTime(rule.getRetryMaxWaitTime(), RETRY_MAX_WAIT_TIME);
     advice.setFileNameFunction(message -> (String) message.getHeaders().get(FileHeaders.FILENAME));
-    advice.setLogDescription("upload to remote folder");
+    advice.setAction("upload to remote folder");
+    advice.setActionCompleted("uploaded to remote folder");
     advice.afterPropertiesSet();
     return advice;
   }

@@ -30,11 +30,6 @@ public class BaseSftpInboundRule {
    */
   private long maxMessagesPerPoll = PollerMetadata.MAX_MESSAGES_UNBOUNDED;
   /**
-   * Set the maximum number of objects the source should fetch if it is necessary to fetch objects. Setting the maxFetchSize to 0
-   * disables remote fetching, a negative value indicates no limit.
-   */
-  private int maxFetchSize = Integer.MIN_VALUE;
-  /**
    * the source path to download files on remote host
    */
   private String remoteSource;

@@ -25,7 +25,8 @@ public class CustomRequestHandlerRetryAdvice extends RequestHandlerRetryAdvice {
   private String ruleName;
   private int retryMaxAttempts;
   private long retryMaxWaitTime;
-  private String logDescription;
+  private String action;
+  private String actionCompleted;
   private Function<Message<?>, String> fileNameFunction;
 
   public CustomRequestHandlerRetryAdvice(ApplicationContext applicationContext) {
@@ -78,10 +79,17 @@ public class CustomRequestHandlerRetryAdvice extends RequestHandlerRetryAdvice {
   }
 
   /**
-   * Set the log description
+   * Set the action
    */
-  public void setLogDescription(String logDescription) {
-    this.logDescription = logDescription;
+  public void setAction(String action) {
+    this.action = action;
+  }
+
+  /**
+   * Set the completed action
+   */
+  public void setActionCompleted(String actionCompleted) {
+    this.actionCompleted = actionCompleted;
   }
 
   /**
@@ -92,7 +100,8 @@ public class CustomRequestHandlerRetryAdvice extends RequestHandlerRetryAdvice {
     super.onInit();
 
     Assert.hasLength(this.ruleName, "Invalid rule name");
-    Assert.hasLength(this.logDescription, "Invalid log description");
+    Assert.hasLength(this.action, "Invalid action");
+    Assert.hasLength(this.actionCompleted, "Invalid completed action");
     Assert.isTrue(this.retryMaxAttempts > 0, "Invalid retry attempts");
     Assert.isTrue(this.retryMaxWaitTime > 0, "Invalid retry wait time");
     Assert.notNull(this.fileNameFunction, "Invalid fileNameFunction");
@@ -120,16 +129,16 @@ public class CustomRequestHandlerRetryAdvice extends RequestHandlerRetryAdvice {
    */
   @Override
   protected Object doInvoke(ExecutionCallback callback, Object target, Message<?> message) {
-    log.info("The maximum number of retry attempts including the initial attempt is {}, wait "
-        + "time in milliseconds is {}", retryMaxAttempts, retryMaxWaitTime);
+    log.info("[{}] The maximum number of retry attempts including the initial attempt is {}, wait "
+        + "time in milliseconds is {}", ruleName, retryMaxAttempts, retryMaxWaitTime);
     final String fileName = this.fileNameFunction.apply(message);
     try {
       Object result = super.doInvoke(callback, target, message);
-      log.info("[{}] File {} has been {}", ruleName, fileName, logDescription);
+      log.info("[{}] File {} has been {}", ruleName, fileName, actionCompleted);
       return result;
     } catch (Exception e) {
       log.error(String.format("[%s] File %s failed to %s after %s retry attempts",
-          ruleName, fileName, logDescription, retryMaxAttempts), e);
+          ruleName, fileName, action, retryMaxAttempts), e);
       return MessageBuilder.withPayload(message.getPayload())
           .copyHeaders(message.getHeaders())
           .setHeaderIfAbsent(SftpConstants.PROCESS_STATUS, SftpConstants.FAILED)
@@ -156,7 +165,7 @@ public class CustomRequestHandlerRetryAdvice extends RequestHandlerRetryAdvice {
       Message<?> requestMessage = (Message<?>) message;
       final String fileName = this.fileNameFunction.apply(requestMessage);
       log.info("[{}] File {} has been {} for the {} time",
-          ruleName, fileName, logDescription, retryCount);
+          ruleName, fileName, actionCompleted, retryCount);
     }
   }
 
@@ -178,7 +187,7 @@ public class CustomRequestHandlerRetryAdvice extends RequestHandlerRetryAdvice {
       Message<?> requestMessage = (Message<?>) message;
       final String fileName = this.fileNameFunction.apply(requestMessage);
       log.error(String.format("[%s] File %s failed to %s for the %s time",
-          ruleName, fileName, logDescription, retryCount), throwable);
+          ruleName, fileName, action, retryCount), throwable);
     }
   }
 
