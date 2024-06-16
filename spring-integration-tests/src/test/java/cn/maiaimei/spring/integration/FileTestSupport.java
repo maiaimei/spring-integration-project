@@ -25,28 +25,28 @@ public abstract class FileTestSupport {
   }
 
   @BeforeEach
-  public void setupEnv(TestInfo info) {
-    initRemoteTempFolder(info);
-    initLocalTempFolder(info);
-    doSetupEnv();
+  public void setup(TestInfo info) {
+    createRemoteTempFolder(info);
+    createLocalTempFolder(info);
+    doSetup();
   }
 
   @AfterEach
-  public void clearEnv() {
-    doClearEnv();
+  public void clearDown() {
+    doClearDown();
   }
 
-  protected void doSetupEnv() {
+  protected void doSetup() {
     // give subclass a chance to setup environment
   }
 
-  protected void doClearEnv() {
+  protected void doClearDown() {
     // give subclass a chance to setup environment
   }
 
-  protected static void setupFolders(TestInfo info) {
-    initRemoteTempFolder(info);
-    initLocalTempFolder(info);
+  protected static void createFolders(TestInfo info) {
+    createRemoteTempFolder(info);
+    createLocalTempFolder(info);
   }
 
   protected File createRemoteFolder(String... children) {
@@ -63,7 +63,7 @@ public abstract class FileTestSupport {
     return file;
   }
 
-  private static void initRemoteTempFolder(TestInfo info) {
+  private static void createRemoteTempFolder(TestInfo info) {
     if (remoteTemporaryFolder == null) {
       remoteTemporaryFolder = new File(
           temporaryFolder.toFile().getAbsolutePath() + File.separator + "remote");
@@ -74,7 +74,7 @@ public abstract class FileTestSupport {
     }
   }
 
-  private static void initLocalTempFolder(TestInfo info) {
+  private static void createLocalTempFolder(TestInfo info) {
     if (localTemporaryFolder == null) {
       localTemporaryFolder = new File(
           temporaryFolder.toFile().getAbsolutePath() + File.separator + "local");

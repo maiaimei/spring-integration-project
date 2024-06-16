@@ -76,7 +76,7 @@ public class SftpInboundFactory extends BaseSftpFactory {
         .handle(Sftp.outboundGateway(template(rule), Command.MV, sourceFileExpression).renameExpression(tempFileExpression))
         .wireTap(info("[{}] File {} has been moved to temp folder", rule))
         .handle(getStream(rule, tempFileExpression), e -> e.advice(getStreamAdvice(rule)))
-        //.handle(checkStream(rule))
+        .handle(checkStream(rule))
         .handle(download(rule, counter))
         .handle(closeSession(rule))
         .wireTap(info("[{}] File {} has been downloaded to local folder", rule))

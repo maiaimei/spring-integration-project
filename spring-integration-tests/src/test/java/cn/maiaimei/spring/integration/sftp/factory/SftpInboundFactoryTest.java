@@ -57,7 +57,7 @@ public class SftpInboundFactoryTest extends SftpTestSupport {
   private IntegrationFlowRegistration registration;
 
   @Override
-  public void doSetupEnv() {
+  public void doSetup() {
     // Create folder for test
     localFile = createLocalFolder("input");
     remoteSourceFile = createRemoteFolder("source");
@@ -85,7 +85,7 @@ public class SftpInboundFactoryTest extends SftpTestSupport {
   }
 
   @Override
-  protected void doClearEnv() {
+  protected void doClearDown() {
     // Destroy integration flow
     registration.destroy();
   }

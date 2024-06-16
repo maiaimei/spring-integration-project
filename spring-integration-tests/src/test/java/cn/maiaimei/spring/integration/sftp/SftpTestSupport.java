@@ -41,7 +41,7 @@ public class SftpTestSupport extends FileTestSupport {
 
   @BeforeAll
   public static void createServer(TestInfo info) throws Exception {
-    setupFolders(info);
+    createFolders(info);
     server = SshServer.setUpDefaultServer();
     server.setPasswordAuthenticator((username, password, session) -> true);
     server.setPort(0);

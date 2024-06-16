@@ -56,7 +56,7 @@ public class SftpOutboundFactoryTest extends SftpTestSupport {
   private SimpleSftpOutboundRule rule;
 
   @Override
-  public void doSetupEnv() {
+  public void doSetup() {
     File localFile = createLocalFolder("output");
     localArchiveErrorFile = createLocalFolder("sent", "error");
     remoteDestinationFile = createRemoteFolder("destination");
@@ -82,7 +82,7 @@ public class SftpOutboundFactoryTest extends SftpTestSupport {
   }
 
   @Override
-  protected void doClearEnv() {
+  protected void doClearDown() {
     // Destroy integration flow
     registration.destroy();
   }
