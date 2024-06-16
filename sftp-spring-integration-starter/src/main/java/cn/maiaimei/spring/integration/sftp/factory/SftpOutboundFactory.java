@@ -104,17 +104,18 @@ public class SftpOutboundFactory extends BaseSftpFactory {
       @Override
       protected Object handleRequestMessage(Message<?> requestMessage) {
         final String fileName = (String) requestMessage.getHeaders().get(FileHeaders.FILENAME);
-        String archive = rule.getArchive();
+        String targetFolder = rule.getArchive();
+        String targetFolderName = "archive";
         if (SftpConstants.FAILED.equals(
             requestMessage.getHeaders().get(SftpConstants.SEND_STATUS))) {
-          archive = FileUtils.normalizePath(
+          targetFolder = FileUtils.normalizePath(
               rule.getArchive() + File.separator + SftpConstants.ERROR);
+          targetFolderName = SftpConstants.ERROR;
         }
         String srcFile = FileUtils.getFilePath(rule.getLocal(), fileName);
-        String destFile = FileUtils.getFilePath(archive, fileName);
+        String destFile = FileUtils.getFilePath(targetFolder, fileName);
         FileUtils.moveFile(srcFile, destFile);
-        log.info("[{}] File {} has been moved from {} to {}",
-            rule.getName(), fileName, rule.getLocal(), archive);
+        log.info("[{}] File {} has been moved to {} folder", rule.getName(), fileName, targetFolderName);
         // return null to terminate the flow
         return null;
       }
@@ -234,13 +235,12 @@ public class SftpOutboundFactory extends BaseSftpFactory {
       String sentStatus = SftpConstants.SUCCESS;
       try {
         super.doInvoke(callback, target, message);
-        log.info("[{}] File {} has been uploaded to {}",
-            rule.getName(), fileName, rule.getRemote());
+        log.info("[{}] File {} has been uploaded to remote folder", rule.getName(), fileName);
       } catch (Exception e) {
         sentStatus = SftpConstants.FAILED;
         log.error(
-            String.format("[%s] File %s failed to upload to %s after %s retry attempts",
-                rule.getName(), fileName, rule.getRemote(), maxAttempts), e);
+            String.format("[%s] File %s failed to upload to remote folder after %s retry attempts",
+                rule.getName(), fileName, maxAttempts), e);
       }
       return MessageBuilder.withPayload(message.getPayload())
           .copyHeaders(message.getHeaders())
@@ -256,8 +256,8 @@ public class SftpOutboundFactory extends BaseSftpFactory {
       if (Objects.nonNull(message) && retryCount > 0) {
         Message<?> requestMessage = (Message<?>) message;
         final String fileName = (String) requestMessage.getHeaders().get(FileHeaders.FILENAME);
-        log.info("[{}] File {} has been uploaded to {} for the {} time",
-            rule.getName(), fileName, rule.getRemote(), retryCount);
+        log.info("[{}] File {} has been uploaded to remote folder for the {} time",
+            rule.getName(), fileName, retryCount);
       }
     }
 
@@ -269,8 +269,8 @@ public class SftpOutboundFactory extends BaseSftpFactory {
       if (Objects.nonNull(message) && retryCount > 0) {
         Message<?> requestMessage = (Message<?>) message;
         final String fileName = (String) requestMessage.getHeaders().get(FileHeaders.FILENAME);
-        log.error(String.format("[%s] File %s failed to upload to %s for the %s time",
-                rule.getName(), fileName, rule.getRemote(), retryCount),
+        log.error(String.format("[%s] File %s failed to upload to remote folder for the %s time",
+                rule.getName(), fileName, retryCount),
             throwable);
       }
     }

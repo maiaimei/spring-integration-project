@@ -52,17 +52,20 @@ public class SftpInboundFactoryTest extends SftpTestSupport {
   @Autowired
   private SftpInboundFactory sftpInboundFactory;
 
-  @Test
-  public void testCreateSimpleSftpInboundFlow()
-      throws ExecutionException, InterruptedException, TimeoutException, IOException {
+  private File remoteSourceFile;
+  private File localFile;
+  private IntegrationFlowRegistration registration;
+
+  @Override
+  public void doSetupEnv() {
     // Create folder for test
-    final File remoteSourceFile = createRemoteFolder("source");
-    final File remoteTempFile = createRemoteFolder("temp");
-    final File remoteArchiveFile = createRemoteFolder("archive");
-    final File localFile = createLocalFolder("input");
+    localFile = createLocalFolder("input");
+    remoteSourceFile = createRemoteFolder("source");
+    File remoteTempFile = createRemoteFolder("temp");
+    File remoteArchiveFile = createRemoteFolder("archive");
 
     // Create inbound rule
-    final BaseSftpInboundRule rule = new BaseSftpInboundRule();
+    BaseSftpInboundRule rule = new BaseSftpInboundRule();
     rule.setId(IdGenerator.nextIdString());
     rule.setName("test-download");
     rule.setSchema(SFTP_SERVER_NAME);
@@ -76,13 +79,21 @@ public class SftpInboundFactoryTest extends SftpTestSupport {
 
     // Register integration flow
     final IntegrationFlow flow = sftpInboundFactory.createSimpleSftpInboundFlow(rule);
-    IntegrationFlowRegistration registration = this.flowContext.registration(flow).register();
+    registration = flowContext.registration(flow).register();
+  }
 
+  @Override
+  protected void doClearEnv() {
+    // Destroy integration flow
+    registration.destroy();
+  }
+
+  @Test
+  public void testDownloadSingleFile()
+      throws ExecutionException, InterruptedException, TimeoutException, IOException {
     // Prepare phase
     Path tempFile = Files.createTempFile(remoteSourceFile.toPath(), "TEST_DOWNLOAD_",
         ".txt");
-
-    assertTrue(Files.exists(tempFile));
 
     // Run async task to wait for expected files to be downloaded 
     // to a file system from a remote SFTP server
@@ -97,8 +108,27 @@ public class SftpInboundFactoryTest extends SftpTestSupport {
     // Validation phase
     assertTrue(future.get(10, TimeUnit.SECONDS));
     assertTrue(Files.notExists(tempFile));
+  }
 
-    registration.destroy();
+  @Test
+  public void testDownloadMultipleFiles()
+      throws ExecutionException, InterruptedException, TimeoutException, IOException {
+    // Prepare phase
+    for (int i = 0; i < 10; i++) {
+      Files.createTempFile(remoteSourceFile.toPath(), "TEST_DOWNLOAD_", ".txt");
+    }
+
+    // Run async task to wait for expected files to be downloaded 
+    // to a file system from a remote SFTP server
+    Future<Boolean> future = Executors.newSingleThreadExecutor().submit(() -> {
+      while (localFile.listFiles().length < 10) {
+        TimeUnit.MILLISECONDS.sleep(200);
+      }
+      return Boolean.TRUE;
+    });
+
+    // Validation phase
+    assertTrue(future.get(10, TimeUnit.SECONDS));
   }
 
   @Import({

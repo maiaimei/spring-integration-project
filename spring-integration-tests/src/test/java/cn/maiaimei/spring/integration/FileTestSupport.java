@@ -5,6 +5,7 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.Arrays;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.io.TempDir;
@@ -24,12 +25,26 @@ public abstract class FileTestSupport {
   }
 
   @BeforeEach
-  public void setupFolders(TestInfo info) {
+  public void setupEnv(TestInfo info) {
     initRemoteTempFolder(info);
     initLocalTempFolder(info);
+    doSetupEnv();
   }
 
-  protected static void initFolders(TestInfo info) {
+  @AfterEach
+  public void clearEnv() {
+    doClearEnv();
+  }
+
+  protected void doSetupEnv() {
+    // give subclass a chance to setup environment
+  }
+
+  protected void doClearEnv() {
+    // give subclass a chance to setup environment
+  }
+
+  protected static void setupFolders(TestInfo info) {
     initRemoteTempFolder(info);
     initLocalTempFolder(info);
   }
