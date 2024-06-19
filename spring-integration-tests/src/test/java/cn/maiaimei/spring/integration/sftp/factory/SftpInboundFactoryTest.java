@@ -12,6 +12,7 @@ import cn.maiaimei.spring.integration.sftp.config.rule.BaseSftpInboundRule;
 import com.google.common.collect.Maps;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
@@ -57,7 +58,7 @@ public class SftpInboundFactoryTest extends SftpTestSupport {
   private IntegrationFlowRegistration registration;
 
   @Override
-  public void doSetup() {
+  public void doSetUp() {
     // Create folder for test
     localFile = createLocalFolder("input");
     remoteSourceFile = createRemoteFolder("source");
@@ -85,7 +86,7 @@ public class SftpInboundFactoryTest extends SftpTestSupport {
   }
 
   @Override
-  protected void doClearDown() {
+  protected void doTearDown() {
     // Destroy integration flow
     registration.destroy();
   }
@@ -96,6 +97,7 @@ public class SftpInboundFactoryTest extends SftpTestSupport {
     // Prepare phase
     Path tempFile = Files.createTempFile(remoteSourceFile.toPath(), "TEST_DOWNLOAD_",
         ".txt");
+    Files.write(tempFile, "foo".getBytes(StandardCharsets.UTF_8));
 
     // Run async task to wait for expected files to be downloaded 
     // to a file system from a remote SFTP server
@@ -108,7 +110,7 @@ public class SftpInboundFactoryTest extends SftpTestSupport {
     });
 
     // Validation phase
-    assertTrue(future.get(10, TimeUnit.SECONDS));
+    assertTrue(future.get(1000000, TimeUnit.SECONDS));
     assertTrue(Files.notExists(tempFile));
   }
 

@@ -25,22 +25,22 @@ public abstract class FileTestSupport {
   }
 
   @BeforeEach
-  public void setup(TestInfo info) {
+  public void setUp(TestInfo info) {
     createRemoteTempFolder(info);
     createLocalTempFolder(info);
-    doSetup();
+    doSetUp();
   }
 
   @AfterEach
-  public void clearDown() {
-    doClearDown();
+  public void tearDown() {
+    doTearDown();
   }
 
-  protected void doSetup() {
+  protected void doSetUp() {
     // give subclass a chance to setup environment
   }
 
-  protected void doClearDown() {
+  protected void doTearDown() {
     // give subclass a chance to setup environment
   }
 

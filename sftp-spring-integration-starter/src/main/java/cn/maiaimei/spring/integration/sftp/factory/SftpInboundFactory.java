@@ -8,6 +8,9 @@ import cn.maiaimei.commons.lang.utils.ValueExpressionUtils;
 import cn.maiaimei.spring.integration.sftp.config.rule.BaseSftpInboundRule;
 import cn.maiaimei.spring.integration.sftp.constants.SftpConstants;
 import cn.maiaimei.spring.integration.sftp.handler.advice.CustomRequestHandlerRetryAdvice;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
@@ -23,6 +26,7 @@ import org.springframework.integration.core.MessageSource;
 import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.file.FileHeaders;
 import org.springframework.integration.file.FileWritingMessageHandler;
+import org.springframework.integration.file.remote.AbstractFileInfo;
 import org.springframework.integration.file.remote.RemoteFileTemplate;
 import org.springframework.integration.file.remote.gateway.AbstractRemoteFileOutboundGateway.Command;
 import org.springframework.integration.file.remote.gateway.AbstractRemoteFileOutboundGateway.Option;
@@ -52,6 +56,12 @@ public class SftpInboundFactory extends BaseSftpFactory {
       + "'/' + headers['file_remoteFile']";
   private static final String ARCHIVE_FILE_EXPRESSION_FORMAT = "'%s/' + headers['file_remoteFile']";
 
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+  static {
+    OBJECT_MAPPER.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, Boolean.FALSE);
+  }
+
   /**
    * Construct a {@link IntegrationFlow} instance by the given rule.
    *
@@ -68,25 +78,51 @@ public class SftpInboundFactory extends BaseSftpFactory {
     return IntegrationFlow.from(sftpStreamingMessageSource(rule),
             e -> e.poller(p -> p.cron(rule.getCron())
                 .maxMessagesPerPoll(rule.getMaxMessagesPerPoll())
-                .errorHandler(sftpStreamingMessageSourceErrorHandler(rule))
+                .errorHandler(errorHandler(rule))
             ))
         .handle(closeSession(rule))
-        .wireTap(info("[{}] File {} is detected in remote folder", rule))
+        .wireTap(flow -> flow.handle(
+            message -> {
+              long size = 0;
+              long modified = 0;
+              final Object value = message.getHeaders().get(FileHeaders.REMOTE_FILE_INFO);
+              if (Objects.nonNull(value)) {
+                try {
+                  AbstractFileInfo<?> fileInfo = OBJECT_MAPPER.readValue((String) value, AbstractFileInfo.class);
+                  size = fileInfo.getSize();
+                  modified = fileInfo.getModified();
+                } catch (JsonProcessingException e) {
+                  log.error(e.getMessage(), e);
+                }
+              }
+              log.info("[{}] File {} is detected in remote folder, size: {}, modified: {}",
+                  rule.getName(), message.getHeaders().get(FileHeaders.REMOTE_FILE), size, modified);
+            }
+        ))
         // https://docs.spring.io/spring-integration/reference/sftp/outbound-gateway.html#using-the-mv-command
         .handle(Sftp.outboundGateway(template(rule), Command.MV, sourceFileExpression).renameExpression(tempFileExpression))
-        .wireTap(info("[{}] File {} has been moved to temp folder", rule))
-        .handle(getStream(rule, tempFileExpression), e -> e.advice(getStreamAdvice(rule)))
-        .handle(checkStream(rule))
+        .wireTap(flow -> flow.handle(
+            message -> log.info("[{}] File {} has been moved to temp folder",
+                rule.getName(), message.getHeaders().get(FileHeaders.REMOTE_FILE))
+        ))
+        .handle(remoteFileToStream(rule, tempFileExpression), e -> e.advice(remoteFileToStreamAdvice(rule)))
+        .handle(checkFileStream(rule))
         .handle(download(rule, counter))
         .handle(closeSession(rule))
-        .wireTap(info("[{}] File {} has been downloaded to local folder", rule))
+        .wireTap(flow -> flow.handle(
+            message -> log.info("[{}] File {} has been downloaded to local folder",
+                rule.getName(), message.getHeaders().get(FileHeaders.REMOTE_FILE))
+        ))
         .enrichHeaders(h -> {
           if (rule.isArchiveByDate()) {
             h.header("now", DateTimeUtils.formatNow(DateTimeConstants.YYYYMMDD));
           }
         })
         .handle(Sftp.outboundGateway(template(rule), Command.MV, tempFileExpression).renameExpression(archiveFileExpression))
-        .wireTap(info("[{}] File {} has been moved to archive folder", rule))
+        .wireTap(flow -> flow.handle(
+            message -> log.info("[{}] File {} has been moved to archive folder",
+                rule.getName(), message.getHeaders().get(FileHeaders.REMOTE_FILE))
+        ))
         .channel("nullChannel")
         .get();
   }
@@ -131,7 +167,7 @@ public class SftpInboundFactory extends BaseSftpFactory {
     return messageSource;
   }
 
-  private ErrorHandler sftpStreamingMessageSourceErrorHandler(BaseSftpInboundRule rule) {
+  private ErrorHandler errorHandler(BaseSftpInboundRule rule) {
     return new ErrorHandler() {
       @Override
       public void handleError(Throwable t) {
@@ -139,18 +175,49 @@ public class SftpInboundFactory extends BaseSftpFactory {
           final MessagingExceptionWrapper wrapper =
               (MessagingExceptionWrapper) t;
           final Throwable cause = wrapper.getCause();
-          log.error(String.format("[%s] Error occurs in fetching file, message: %s",
+          log.error(String.format("[%s] Error occurs in download file, message: %s",
               rule.getName(), cause.getMessage()), cause);
           closeSession(rule, wrapper.getFailedMessage());
         } else {
-          log.error(String.format("[%s] Error occurs in fetching file, message: %s",
+          log.error(String.format("[%s] Error occurs in download file, message: %s",
               rule.getName(), t.getMessage()), t);
         }
       }
     };
   }
 
-  private AbstractReplyProducingMessageHandler checkStream(BaseSftpInboundRule rule) {
+  /**
+   * Construct a {@link SftpOutboundGateway} instance by the given rule and tempFileExpression.
+   *
+   * @param rule               the rule to use
+   * @param tempFileExpression the tempFileExpression to use
+   * @return a {@link SftpOutboundGateway} instance
+   */
+  private SftpOutboundGateway remoteFileToStream(BaseSftpInboundRule rule, String tempFileExpression) {
+    final SftpOutboundGateway gateway = new SftpOutboundGateway(template(rule), Command.GET.getCommand(), tempFileExpression);
+    gateway.setOption(Option.STREAM);
+    return gateway;
+  }
+
+  /**
+   * Construct a {@link Advice} instance by the given rule.
+   *
+   * @param rule the rule to use
+   * @return a {@link Advice} instance
+   */
+  private Advice remoteFileToStreamAdvice(BaseSftpInboundRule rule) {
+    CustomRequestHandlerRetryAdvice advice = new CustomRequestHandlerRetryAdvice(applicationContext);
+    advice.setRuleName(rule.getName());
+    advice.setRetryMaxAttempts(rule.getRetryMaxAttempts(), RETRY_MAX_ATTEMPTS);
+    advice.setRetryMaxWaitTime(rule.getRetryMaxWaitTime(), RETRY_MAX_WAIT_TIME);
+    advice.setFileNameFunction(message -> (String) message.getHeaders().get(FileHeaders.REMOTE_FILE));
+    advice.setAction("convert to stream");
+    advice.setActionCompleted("converted to stream");
+    advice.afterPropertiesSet();
+    return advice;
+  }
+
+  private AbstractReplyProducingMessageHandler checkFileStream(BaseSftpInboundRule rule) {
     return new AbstractReplyProducingMessageHandler() {
       @Override
       protected Object handleRequestMessage(Message<?> requestMessage) {
@@ -268,43 +335,6 @@ public class SftpInboundFactory extends BaseSftpFactory {
     Assert.hasText(rule.getRemoteSource(), "remoteSource must be configured");
     Assert.hasText(rule.getRemoteTemp(), "remoteTemp must be configured");
     Assert.hasText(rule.getRemoteArchive(), "remoteArchive must be configured");
-  }
-
-  private IntegrationFlow info(String format, BaseSftpInboundRule rule) {
-    return flow -> flow.handle(
-        message -> log.info(format, rule.getName(), message.getHeaders().get(FileHeaders.REMOTE_FILE))
-    );
-  }
-
-  /**
-   * Construct a {@link SftpOutboundGateway} instance by the given rule and tempFileExpression.
-   *
-   * @param rule               the rule to use
-   * @param tempFileExpression the tempFileExpression to use
-   * @return a {@link SftpOutboundGateway} instance
-   */
-  private SftpOutboundGateway getStream(BaseSftpInboundRule rule, String tempFileExpression) {
-    final SftpOutboundGateway gateway = new SftpOutboundGateway(template(rule), Command.GET.getCommand(), tempFileExpression);
-    gateway.setOption(Option.STREAM);
-    return gateway;
-  }
-
-  /**
-   * Construct a {@link Advice} instance by the given rule.
-   *
-   * @param rule the rule to use
-   * @return a {@link Advice} instance
-   */
-  private Advice getStreamAdvice(BaseSftpInboundRule rule) {
-    CustomRequestHandlerRetryAdvice advice = new CustomRequestHandlerRetryAdvice(applicationContext);
-    advice.setRuleName(rule.getName());
-    advice.setRetryMaxAttempts(rule.getRetryMaxAttempts(), RETRY_MAX_ATTEMPTS);
-    advice.setRetryMaxWaitTime(rule.getRetryMaxWaitTime(), RETRY_MAX_WAIT_TIME);
-    advice.setFileNameFunction(message -> (String) message.getHeaders().get(FileHeaders.REMOTE_FILE));
-    advice.setAction("convert to stream");
-    advice.setActionCompleted("converted to stream");
-    advice.afterPropertiesSet();
-    return advice;
   }
 
 }

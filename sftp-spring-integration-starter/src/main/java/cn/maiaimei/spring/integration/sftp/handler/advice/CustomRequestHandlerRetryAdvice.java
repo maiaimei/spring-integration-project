@@ -99,11 +99,11 @@ public class CustomRequestHandlerRetryAdvice extends RequestHandlerRetryAdvice {
   protected void onInit() {
     super.onInit();
 
-    Assert.hasLength(this.ruleName, "Invalid rule name");
+    Assert.hasLength(this.ruleName, "Invalid ruleName");
     Assert.hasLength(this.action, "Invalid action");
-    Assert.hasLength(this.actionCompleted, "Invalid completed action");
-    Assert.isTrue(this.retryMaxAttempts > 0, "Invalid retry attempts");
-    Assert.isTrue(this.retryMaxWaitTime > 0, "Invalid retry wait time");
+    Assert.hasLength(this.actionCompleted, "Invalid actionCompleted");
+    Assert.isTrue(this.retryMaxAttempts > 0, "Invalid retryMaxAttempts");
+    Assert.isTrue(this.retryMaxWaitTime > 0, "Invalid retryMaxWaitTime");
     Assert.notNull(this.fileNameFunction, "Invalid fileNameFunction");
 
     SimpleRetryPolicy retryPolicy = new SimpleRetryPolicy();
