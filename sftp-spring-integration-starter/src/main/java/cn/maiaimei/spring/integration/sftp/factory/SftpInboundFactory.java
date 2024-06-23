@@ -8,9 +8,6 @@ import cn.maiaimei.commons.lang.utils.ValueExpressionUtils;
 import cn.maiaimei.spring.integration.sftp.config.rule.BaseSftpInboundRule;
 import cn.maiaimei.spring.integration.sftp.constants.SftpConstants;
 import cn.maiaimei.spring.integration.sftp.handler.advice.CustomRequestHandlerRetryAdvice;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,7 +23,6 @@ import org.springframework.integration.core.MessageSource;
 import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.file.FileHeaders;
 import org.springframework.integration.file.FileWritingMessageHandler;
-import org.springframework.integration.file.remote.AbstractFileInfo;
 import org.springframework.integration.file.remote.RemoteFileTemplate;
 import org.springframework.integration.file.remote.gateway.AbstractRemoteFileOutboundGateway.Command;
 import org.springframework.integration.file.remote.gateway.AbstractRemoteFileOutboundGateway.Option;
@@ -56,12 +52,6 @@ public class SftpInboundFactory extends BaseSftpFactory {
       + "'/' + headers['file_remoteFile']";
   private static final String ARCHIVE_FILE_EXPRESSION_FORMAT = "'%s/' + headers['file_remoteFile']";
 
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-
-  static {
-    OBJECT_MAPPER.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, Boolean.FALSE);
-  }
-
   /**
    * Construct a {@link IntegrationFlow} instance by the given rule.
    *
@@ -82,22 +72,8 @@ public class SftpInboundFactory extends BaseSftpFactory {
             ))
         .handle(closeSession(rule))
         .wireTap(flow -> flow.handle(
-            message -> {
-              long size = 0;
-              long modified = 0;
-              final Object value = message.getHeaders().get(FileHeaders.REMOTE_FILE_INFO);
-              if (Objects.nonNull(value)) {
-                try {
-                  AbstractFileInfo<?> fileInfo = OBJECT_MAPPER.readValue((String) value, AbstractFileInfo.class);
-                  size = fileInfo.getSize();
-                  modified = fileInfo.getModified();
-                } catch (JsonProcessingException e) {
-                  log.error(e.getMessage(), e);
-                }
-              }
-              log.info("[{}] File {} is detected in remote folder, size: {}, modified: {}",
-                  rule.getName(), message.getHeaders().get(FileHeaders.REMOTE_FILE), size, modified);
-            }
+            message -> log.info("[{}] File {} is detected in remote folder",
+                rule.getName(), message.getHeaders().get(FileHeaders.REMOTE_FILE))
         ))
         // https://docs.spring.io/spring-integration/reference/sftp/outbound-gateway.html#using-the-mv-command
         .handle(Sftp.outboundGateway(template(rule), Command.MV, sourceFileExpression).renameExpression(tempFileExpression))

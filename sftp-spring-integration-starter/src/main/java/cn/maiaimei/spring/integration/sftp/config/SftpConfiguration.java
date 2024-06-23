@@ -117,11 +117,11 @@ public class SftpConfiguration {
     sessionFactory.setUser(conn.getUser());
     if (Objects.nonNull(conn.getPrivateKey())) {
       sessionFactory.setPrivateKey(conn.getPrivateKey());
+      if (StringUtils.hasText(conn.getPrivateKeyPassphrase())) {
+        sessionFactory.setPrivateKeyPassphrase(conn.getPrivateKeyPassphrase());
+      }
     } else if (StringUtils.hasText(conn.getPassword())) {
       sessionFactory.setPassword(conn.getPassword());
-    }
-    if (StringUtils.hasText(conn.getPrivateKeyPassphrase())) {
-      sessionFactory.setPrivateKeyPassphrase(conn.getPrivateKeyPassphrase());
     }
     sessionFactory.setAllowUnknownKeys(Boolean.TRUE);
     return sessionFactory;

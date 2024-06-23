@@ -11,11 +11,10 @@ sftp:
   # the connections applied for inbound and outbound
   connections:
     df:
-      host: 127.0.0.1
-      port: 54661
-      user: foo
-      privateKey: classpath:/META-INF/keys/sftp_rsa
-      privateKeyPassphrase: foo
+      host: 192.168.1.31
+      port: 22
+      user: sftpusr
+      privateKey: file:E:\code\.ssh\id_rsa
   # inbound config
   inbound:
     retry:
@@ -23,20 +22,19 @@ sftp:
       maxWaitTime: 300000
     connections:
       in:
-        host: 127.0.0.1
-        port: 54662
-        user: foo
-        privateKey: classpath:/META-INF/keys/sftp_rsa
-        privateKeyPassphrase: foo
+        host: 192.168.1.31
+        port: 22
+        user: sftpusr
+        privateKey: file:E:\code\.ssh\id_rsa
     rules:
       - id: 123456
         name: test-inbound
         schema: in
-        remoteSource: /path/to/source
-        remoteTemp: /path/to/temp
-        remoteArchive: /path/to/archive
+        remoteSource: /home/sftpusr/sftp-staging/tms/inbound
+        remoteTemp: /home/sftpusr/sftp-staging/tms/inbound/temp
+        remoteArchive: /home/sftpusr/sftp-staging/tms/inbound/archive
         archiveByDate: true
-        pattern: "*.txt"
+        pattern: "{spring:\\S+_TRANSACTION_[0-9]{8}_[0-9]+.json}"
         local: C:\Users\lenovo\Desktop\tmp\input
         retryMaxAttempts: 4
         retryMaxWaitTime: 3000
