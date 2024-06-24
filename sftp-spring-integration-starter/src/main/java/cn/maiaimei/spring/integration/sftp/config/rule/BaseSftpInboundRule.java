@@ -1,7 +1,6 @@
 package cn.maiaimei.spring.integration.sftp.config.rule;
 
 import lombok.Data;
-import org.springframework.integration.scheduling.PollerMetadata;
 
 /**
  * BaseSftpInboundRule
@@ -24,11 +23,11 @@ public class BaseSftpInboundRule {
   /**
    * the cron expression
    */
-  private String cron = "* * * * * ?";
+  private String cron;
   /**
    * max messages per poll
    */
-  private long maxMessagesPerPoll = PollerMetadata.MAX_MESSAGES_UNBOUNDED;
+  private long maxMessagesPerPoll;
   /**
    * the source path to download files on remote host
    */
@@ -57,6 +56,10 @@ public class BaseSftpInboundRule {
    * Specify a SpEL expression for files renaming during download.
    */
   private String renameExpression;
+  /**
+   * ready file suffix
+   */
+  private String readyFileSuffix;
   /**
    * the maximum number of retry attempts including the initial attempt
    * <p>

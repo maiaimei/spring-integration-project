@@ -2,6 +2,8 @@ package cn.maiaimei.spring.integration.sftp.constants;
 
 public class SftpConstants {
 
+  public static final String INBOUND = "inbound";
+  public static final String OUTBOUND = "outbound";
   public static final String SUCCESS = "success";
   public static final String FAILED = "failed";
   public static final String ERROR = "error";

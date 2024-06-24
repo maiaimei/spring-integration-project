@@ -28,6 +28,8 @@ import org.springframework.util.Assert;
  */
 public class SftpOutboundFactory extends BaseSftpFactory {
 
+  private static final String POLLER_CRON = "sftp.outbound.poller.cron";
+  private static final String POLLER_MAX_MESSAGES_PER_POLL = "sftp.outbound.poller.maxMessagesPerPoll";
   private static final String RETRY_MAX_ATTEMPTS = "sftp.outbound.retry.maxAttempts";
   private static final String RETRY_MAX_WAIT_TIME = "sftp.outbound.retry.maxWaitTime";
 
@@ -41,7 +43,8 @@ public class SftpOutboundFactory extends BaseSftpFactory {
     validateRule(rule);
     log.info("Init sftp outbound rule named {}, id: {}", rule.getName(), rule.getId());
     return IntegrationFlow.from(fileReadingMessageSource(rule),
-            e -> e.poller(p -> p.cron(rule.getCron()).maxMessagesPerPoll(rule.getMaxMessagesPerPoll())))
+            e -> e.poller(p -> p.cron(getCron(rule.getCron(), POLLER_CRON))
+                .maxMessagesPerPoll(getMaxMessagesPerPoll(rule.getMaxMessagesPerPoll(), POLLER_MAX_MESSAGES_PER_POLL))))
         .wireTap(info("[{}] File {} is detected in local folder", rule))
         .handle(Sftp.outboundGateway(template(rule), Command.PUT, SftpConstants.PAYLOAD))
         .wireTap(info("[{}] File {} has been uploaded to remote folder", rule))

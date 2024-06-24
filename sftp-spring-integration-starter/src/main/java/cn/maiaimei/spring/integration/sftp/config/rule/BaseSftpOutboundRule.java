@@ -23,11 +23,11 @@ public class BaseSftpOutboundRule {
   /**
    * the cron expression
    */
-  private String cron = "* * * * * ?";
+  private String cron;
   /**
    * max messages per poll
    */
-  private long maxMessagesPerPoll = 100;
+  private long maxMessagesPerPoll;
   /**
    * the files match this pattern will send to remote host
    */
@@ -47,7 +47,7 @@ public class BaseSftpOutboundRule {
   /**
    * whether passes files only one time
    */
-  private boolean acceptOnce = false;
+  private boolean acceptOnce;
   /**
    * the maximum number of retry attempts including the initial attempt
    * <p>

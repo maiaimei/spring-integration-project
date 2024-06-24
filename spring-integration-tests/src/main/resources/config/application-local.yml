@@ -17,6 +17,9 @@ sftp:
       privateKey: file:E:\code\.ssh\id_rsa
   # inbound config
   inbound:
+    poller:
+      cron: "0 0/15 * * * ?"
+      maxMessagesPerPoll: 1000
     retry:
       maxAttempts: 4
       maxWaitTime: 300000
@@ -40,6 +43,9 @@ sftp:
         retryMaxWaitTime: 3000
   # outbound config
   outbound:
+    poller:
+      cron: "0 0/15 * * * ?"
+      maxMessagesPerPoll: 1000
     retry:
       maxAttempts: 4
       maxWaitTime: 300000

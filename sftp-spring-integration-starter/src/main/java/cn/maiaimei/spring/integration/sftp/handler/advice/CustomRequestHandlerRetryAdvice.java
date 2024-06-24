@@ -1,6 +1,7 @@
 package cn.maiaimei.spring.integration.sftp.handler.advice;
 
 import cn.maiaimei.spring.integration.sftp.constants.SftpConstants;
+import cn.maiaimei.spring.integration.sftp.utils.PropertiesUtils;
 import java.util.Objects;
 import java.util.function.Function;
 import org.slf4j.Logger;
@@ -48,11 +49,7 @@ public class CustomRequestHandlerRetryAdvice extends RequestHandlerRetryAdvice {
     if (maxAttempts > 0) {
       this.retryMaxAttempts = maxAttempts;
     } else {
-      final Integer configValue = applicationContext.getEnvironment().getProperty(configName, Integer.class);
-      if (Objects.isNull(configValue)) {
-        throw new IllegalArgumentException("No config named " + configName);
-      }
-      this.retryMaxAttempts = configValue;
+      this.retryMaxAttempts = PropertiesUtils.getProperty(applicationContext, configName, Integer.class);
     }
   }
 
@@ -63,11 +60,7 @@ public class CustomRequestHandlerRetryAdvice extends RequestHandlerRetryAdvice {
     if (maxWaitTime > 0) {
       this.retryMaxWaitTime = maxWaitTime;
     } else {
-      final Long configValue = applicationContext.getEnvironment().getProperty(configName, Long.class);
-      if (Objects.isNull(configValue)) {
-        throw new IllegalArgumentException("No config named " + configName);
-      }
-      this.retryMaxWaitTime = configValue;
+      this.retryMaxWaitTime = PropertiesUtils.getProperty(applicationContext, configName, Long.class);
     }
   }
 

@@ -17,12 +17,14 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.aopalliance.aop.Advice;
+import org.apache.sshd.sftp.client.SftpClient;
 import org.apache.sshd.sftp.client.SftpClient.DirEntry;
 import org.springframework.integration.StaticMessageHeaderAccessor;
 import org.springframework.integration.core.MessageSource;
 import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.file.FileHeaders;
 import org.springframework.integration.file.FileWritingMessageHandler;
+import org.springframework.integration.file.filters.CompositeFileListFilter;
 import org.springframework.integration.file.remote.RemoteFileTemplate;
 import org.springframework.integration.file.remote.gateway.AbstractRemoteFileOutboundGateway.Command;
 import org.springframework.integration.file.remote.gateway.AbstractRemoteFileOutboundGateway.Option;
@@ -43,6 +45,8 @@ import org.springframework.util.ErrorHandler;
  */
 public class SftpInboundFactory extends BaseSftpFactory {
 
+  private static final String POLLER_CRON = "sftp.inbound.poller.cron";
+  private static final String POLLER_MAX_MESSAGES_PER_POLL = "sftp.inbound.poller.maxMessagesPerPoll";
   private static final String RETRY_MAX_ATTEMPTS = "sftp.inbound.retry.maxAttempts";
   private static final String RETRY_MAX_WAIT_TIME = "sftp.inbound.retry.maxWaitTime";
 
@@ -66,8 +70,8 @@ public class SftpInboundFactory extends BaseSftpFactory {
     String tempFileExpression = getTempFileExpression(rule);
     String archiveFileExpression = getArchiveFileExpression(rule);
     return IntegrationFlow.from(sftpStreamingMessageSource(rule),
-            e -> e.poller(p -> p.cron(rule.getCron())
-                .maxMessagesPerPoll(rule.getMaxMessagesPerPoll())
+            e -> e.poller(p -> p.cron(getCron(rule.getCron(), POLLER_CRON))
+                .maxMessagesPerPoll(getMaxMessagesPerPoll(rule.getMaxMessagesPerPoll(), POLLER_MAX_MESSAGES_PER_POLL))
                 .errorHandler(errorHandler(rule))
             ))
         .handle(closeSession(rule))
@@ -137,9 +141,15 @@ public class SftpInboundFactory extends BaseSftpFactory {
    * @return a {@link MessageSource} instance
    */
   private MessageSource<InputStream> sftpStreamingMessageSource(BaseSftpInboundRule rule) {
+    CompositeFileListFilter<SftpClient.DirEntry> filter = new CompositeFileListFilter<>();
+    filter.addFilter(new SftpSimplePatternFileListFilter(rule.getPattern()));
+    if (StringUtils.hasText(rule.getReadyFileSuffix())) {
+      
+    }
+
     SftpStreamingMessageSource messageSource = new SftpStreamingMessageSource(template(rule));
     messageSource.setRemoteDirectory(rule.getRemoteSource());
-    messageSource.setFilter(new SftpSimplePatternFileListFilter(rule.getPattern()));
+    messageSource.setFilter(filter);
     return messageSource;
   }
 
