@@ -27,18 +27,19 @@ sftp:
       in:
         host: 192.168.1.31
         port: 22
-        user: sftpusr
+        user: appadm
         privateKey: file:E:\code\.ssh\id_rsa
     rules:
       - id: 123456
         name: test-inbound
         schema: in
-        remoteSource: /home/sftpusr/sftp-staging/tms/inbound
-        remoteTemp: /home/sftpusr/sftp-staging/tms/inbound/temp
-        remoteArchive: /home/sftpusr/sftp-staging/tms/inbound/archive
+        remoteSource: /appl/sftp-staging/jd/inbound
+        remoteTemp: /appl/sftp-staging/jd/inbound/temp
+        remoteArchive: /appl/sftp-staging/jd/inbound/archive
         archiveByDate: true
         pattern: "{spring:\\S+_TRANSACTION_[0-9]{8}_[0-9]+.json}"
         local: C:\Users\lenovo\Desktop\tmp\input
+        cron: "* * * * * ?"
         retryMaxAttempts: 4
         retryMaxWaitTime: 3000
   # outbound config
