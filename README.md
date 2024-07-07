@@ -1,17 +1,37 @@
 # Spring
 
-@ExtendWith(SpringExtension.class)提供了Spring单测的上下文环境, 会启动一个用于单测的Spring容器,
-完成单测中所需的bean对象的构建与自动注入。
+@ExtendWith(SpringExtension.class) 是 JUnit 5 中用于集成 Spring 环境的注解，提供了Spring单测的上下文环境, 会启动一个用于单测的Spring容器，完成单测中所需的bean对象的构建与自动注入。
+
+@ActiveProfiles 激活指定环境配置。配置文件需要符合 application-\*.yml 或 application-\*.properties 命名规范且放在resources目录下。
 
 @PropertySource 和 @ContextConfiguration 是Spring框架中用于进行单元测试的两个注解。
 
-@PropertySource 用于指定属性文件的位置，这样可以在测试过程中使用属性文件中定义的值。
+@PropertySource 或 @TestPropertySource 用于指定属性文件的位置，这样可以在测试过程中使用属性文件中定义的值。
+
+@ImportResource
 
 @ContextConfiguration 用于指定Spring上下文的配置类或定义XML文件的位置，以便在测试运行时创建应用程序上下文。
 
-@TestPropertySource
+以下为SpringBoot项目读取配置文件优先级顺序：
 
-@ImportResource
+1. config/application.properties（项目根目录的config目录下）
+
+2. config/application.yml（项目根目录的config目录下）
+3. application.properties（项目根目录下）
+
+4. application.yml（项目根目录下）
+5. src/test/resources/config/application.properties
+
+6. src/test/resources/config/application.yml
+7. src/test/resources/application.properties
+
+8. src/test/resources/application.yml
+9. src/main/resources/config/application.properties
+
+10. src/main/resources/config/application.yml
+11. src/main/resources/application.properties
+
+12. src/main/resources/application.yml
 
 # Junit
 

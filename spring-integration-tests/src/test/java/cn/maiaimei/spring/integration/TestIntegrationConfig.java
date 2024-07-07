@@ -7,6 +7,6 @@ import org.springframework.integration.config.EnableIntegration;
 @EnableIntegration
 @EnableConfigurationProperties
 @Configuration
-public class TestApplication {
+public class TestIntegrationConfig {
 
 }

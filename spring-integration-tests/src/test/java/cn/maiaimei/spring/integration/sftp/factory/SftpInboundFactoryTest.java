@@ -3,7 +3,7 @@ package cn.maiaimei.spring.integration.sftp.factory;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import cn.maiaimei.commons.lang.utils.IdGenerator;
-import cn.maiaimei.spring.integration.TestApplication;
+import cn.maiaimei.spring.integration.TestIntegrationConfig;
 import cn.maiaimei.spring.integration.sftp.SftpTestSupport;
 import cn.maiaimei.spring.integration.sftp.config.SftpConfiguration;
 import cn.maiaimei.spring.integration.sftp.config.SftpConnection;
@@ -136,7 +136,7 @@ public class SftpInboundFactoryTest extends SftpTestSupport {
   }
 
   @Import({
-      TestApplication.class,
+      TestIntegrationConfig.class,
       SftpConfiguration.class
   })
   @TestConfiguration
