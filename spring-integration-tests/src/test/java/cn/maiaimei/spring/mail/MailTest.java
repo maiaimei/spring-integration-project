@@ -3,6 +3,7 @@ package cn.maiaimei.spring.mail;
 import cn.maiaimei.spring.integration.config.MailConfiguration;
 import cn.maiaimei.spring.integration.config.MailConnection;
 import jakarta.mail.Folder;
+import jakarta.mail.Message;
 import jakarta.mail.MessagingException;
 import jakarta.mail.Session;
 import jakarta.mail.Store;
@@ -122,16 +123,51 @@ public class MailTest {
       Session session = Session.getDefaultInstance(props, null);
       final Store store = session.getStore(mailConnection.getProtocol());
       store.connect(mailConnection.getHost(), mailConnection.getUsername(), mailConnection.getPassword());
-      final Folder[] folders = store.getDefaultFolder().list("*");
+      //final Folder[] folders = store.getDefaultFolder().list("*");
+      final Folder[] folders = store.getDefaultFolder().list();
       for (Folder folder : folders) {
         if ((folder.getType() & Folder.HOLDS_MESSAGES) != 0) {
           log.info("{}: {}", folder.getFullName(), folder.getMessageCount());
         }
       }
+      store.close();
     } catch (MessagingException e) {
       log.error(e.getMessage(), e);
     }
+  }
 
+  @Test
+  public void readInbox() {
+    try {
+      // 创建Session
+      Properties props = System.getProperties();
+      final MailConnection mailConnection = mailConfiguration.getConnections().get("test-imap");
+      mailConnection.getProperties().forEach(props::setProperty);
+      Session session = Session.getDefaultInstance(props, null);
+      // 连接邮箱服务器
+      final Store store = session.getStore(mailConnection.getProtocol());
+      store.connect(mailConnection.getHost(), mailConnection.getUsername(), mailConnection.getPassword());
+      // 打开邮箱
+      final Folder inboxFolder = store.getFolder("INBOX");
+      inboxFolder.open(Folder.READ_ONLY);
+      // 读取邮件
+      Message[] messages = inboxFolder.getMessages();
+      log.info("messages length: {}", messages.length);
+      // 解析邮件内容
+      for (Message message : messages) {
+        MimeMessage mimeMessage = (MimeMessage) message;
+        log.info("Subject: {}", mimeMessage.getSubject());
+        log.info("Content: {}", mimeMessage.getContent().toString());
+        log.info("From: {}", InternetAddress.toString(mimeMessage.getFrom()));
+        log.info("SentDate: {}", mimeMessage.getSentDate());
+      }
+      // 关闭邮箱
+      inboxFolder.close(Boolean.FALSE);
+      // 断开邮箱服务器
+      store.close();
+    } catch (MessagingException | IOException e) {
+      log.error(e.getMessage(), e);
+    }
   }
 
   @Configuration
