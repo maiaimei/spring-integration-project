@@ -26,7 +26,6 @@ public abstract class FileTestSupport {
 
   @BeforeEach
   public void setUp(TestInfo info) {
-    createRemoteTempFolder(info);
     createLocalTempFolder(info);
     doSetUp();
   }
@@ -44,11 +43,6 @@ public abstract class FileTestSupport {
     // give subclass a chance to setup environment
   }
 
-  protected static void createFolders(TestInfo info) {
-    createRemoteTempFolder(info);
-    createLocalTempFolder(info);
-  }
-
   protected File createRemoteFolder(String... children) {
     final String child = StringUtils.concat(File.separator, children);
     File file = new File(remoteTemporaryFolder, child);
@@ -63,7 +57,7 @@ public abstract class FileTestSupport {
     return file;
   }
 
-  private static void createRemoteTempFolder(TestInfo info) {
+  protected static void createRemoteTempFolder(TestInfo info) {
     if (remoteTemporaryFolder == null) {
       remoteTemporaryFolder = new File(
           temporaryFolder.toFile().getAbsolutePath() + File.separator + "remote");
@@ -74,7 +68,7 @@ public abstract class FileTestSupport {
     }
   }
 
-  private static void createLocalTempFolder(TestInfo info) {
+  protected static void createLocalTempFolder(TestInfo info) {
     if (localTemporaryFolder == null) {
       localTemporaryFolder = new File(
           temporaryFolder.toFile().getAbsolutePath() + File.separator + "local");
@@ -85,7 +79,7 @@ public abstract class FileTestSupport {
     }
   }
 
-  private static void recursiveDelete(File file, TestInfo info) {
+  protected static void recursiveDelete(File file, TestInfo info) {
     if (file != null && file.exists()) {
       File[] files = file.listFiles();
       if (files != null) {

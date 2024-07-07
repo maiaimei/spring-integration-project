@@ -22,3 +22,21 @@ spring:
       "[mail.smtp.connectiontimeout]": 5000
       "[mail.smtp.timeout]": 3000
       "[mail.smtp.writetimeout]": 5000
+
+mail:
+  connections:
+    test-imap:
+      protocol: imaps
+      host: imap.qq.com
+      port: 993
+      username: dummy08@qq.com
+      password: dummy08
+      properties:
+        "[mail.imap.socketFactory.class]": javax.net.ssl.SSLSocketFactory
+        "[mail.imap.socketFactory.fallback]": false
+        "[mail.store.protocol]": imaps
+        "[mail.debug]": true
+  recipients:
+    to: dummy08@qq.com
+    cc: dummy08@qq.com
+    bcc: dummy08@qq.com

@@ -1,10 +1,16 @@
 package cn.maiaimei.spring.mail;
 
+import cn.maiaimei.spring.integration.config.MailConfiguration;
+import cn.maiaimei.spring.integration.config.MailConnection;
+import jakarta.mail.Folder;
 import jakarta.mail.MessagingException;
+import jakarta.mail.Session;
+import jakarta.mail.Store;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
 import java.io.File;
 import java.io.IOException;
+import java.util.Properties;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,17 +48,20 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 @ExtendWith(SpringExtension.class)
 public class MailTest {
 
-  @Value("${test.mail.from:unknown}")
+  @Value("${mail.from:unknown}")
   private String from;
 
-  @Value("${test.mail.to:unknown}")
+  @Value("${mail.recipients.to:unknown}")
   private String to;
 
-  @Value("${test.mail.cc:unknown}")
+  @Value("${mail.recipients.cc:unknown}")
   private String cc;
 
-  @Value("${test.mail.bcc:unknown}")
+  @Value("${mail.recipients.bcc:unknown}")
   private String bcc;
+
+  @Autowired
+  private MailConfiguration mailConfiguration;
 
   @Autowired
   private MailProperties mailProperties;
@@ -86,9 +95,9 @@ public class MailTest {
 
     final MimeMessage mimeMessage = javaMailSender.createMimeMessage();
     final MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, Boolean.TRUE);
-    helper.setSubject("Test Miscellaneous Mail 03");
+    helper.setSubject("Test Miscellaneous Mail 04");
     helper.setText(
-        "Test Miscellaneous Mail 03 body <p><img src=\"https://0img.chimelong"
+        "Test Miscellaneous Mail 04 body <p><img src=\"https://0img.chimelong"
             + ".com/backend-file/2024/06/26/105334_a6f7ce4e21784c0bb864c59d02e79137.jpg\" /></p>", Boolean.TRUE);
     helper.setFrom(mailProperties.getUsername());
     helper.setTo(to);
@@ -99,8 +108,37 @@ public class MailTest {
     javaMailSender.send(mimeMessage);
   }
 
+  @Test
+  public void testReceiveMailByIMAP() {
+
+  }
+
+  @Test
+  public void testListFolders() {
+    Properties props = System.getProperties();
+    final MailConnection mailConnection = mailConfiguration.getConnections().get("test-imap");
+    mailConnection.getProperties().forEach(props::setProperty);
+    try {
+      Session session = Session.getDefaultInstance(props, null);
+      final Store store = session.getStore(mailConnection.getProtocol());
+      store.connect(mailConnection.getHost(), mailConnection.getUsername(), mailConnection.getPassword());
+      final Folder[] folders = store.getDefaultFolder().list("*");
+      for (Folder folder : folders) {
+        if ((folder.getType() & Folder.HOLDS_MESSAGES) != 0) {
+          log.info("{}: {}", folder.getFullName(), folder.getMessageCount());
+        }
+      }
+    } catch (MessagingException e) {
+      log.error(e.getMessage(), e);
+    }
+
+  }
+
   @Configuration
-  @Import(MailSenderAutoConfiguration.class)
+  @Import({
+      MailSenderAutoConfiguration.class,
+      MailConfiguration.class,
+  })
   public static class ContextConfig {
 
   }
